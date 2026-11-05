@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Security Pattern Heuristic Scanner (with Secret Redaction)
+Security Pattern Heuristic Scanner (with Multi-Pass Secret Redaction)
 Part of software-craft-skill.
 Detects static suspicious patterns (credentials, raw queries, eval).
 DISCLAIMER: This is a static regex heuristic scanner, NOT an enterprise SAST tool
@@ -45,7 +45,7 @@ PATTERNS = [
     {
         "type": "SUSPICIOUS_ASSIGNED_SECRET",
         "category": "CREDENTIALS",
-        "pattern": re.compile(r'((?:api[_-]?key|secret|auth[_-]?token|jwt[_-]?secret)\s*[:=]\s*["\'])([a-zA-Z0-9_\-\.]{20,})(["\'])', re.IGNORECASE),
+        "pattern": re.compile(r'((?:api[_-]?key|secret|auth[_-]?token|jwt[_-]?secret|password|access[_-]?token)\s*[:=]\s*["\'])([a-zA-Z0-9_\-\.]{20,})(["\'])', re.IGNORECASE),
         "default_confidence": "MEDIUM",
         "verification_advice": "Verify if this is an active production credential or a benign development fixture."
     },
@@ -80,21 +80,40 @@ PATTERNS = [
 ]
 
 
-def redact_line(line: str, pattern_type: str) -> str:
-    """Masks secret values from snippet to prevent leaking credentials in reports."""
-    redacted = line.strip()
-    if pattern_type == "SUSPICIOUS_AWS_KEY_PATTERN":
-        redacted = re.sub(r'AKIA[0-9A-Z]{16}', 'AKIA[REDACTED_AWS_KEY]', redacted)
-    elif pattern_type == "SUSPICIOUS_ASSIGNED_SECRET":
-        redacted = re.sub(
-            r'((?:api[_-]?key|secret|auth[_-]?token|jwt[_-]?secret)\s*[:=]\s*["\'])([^"\']+)(["\'])',
-            r'\1[REDACTED_SECRET]\3',
-            redacted,
-            flags=re.IGNORECASE
-        )
-    elif pattern_type == "SUSPICIOUS_PRIVATE_KEY_HEADER":
-        redacted = "-----BEGIN [REDACTED_PRIVATE_KEY]-----"
-    return redacted[:100]
+def sanitize_all_secrets_in_line(line: str) -> str:
+    """
+    Applies comprehensive multi-pass secret redaction on a line.
+    Ensures that if multiple credentials appear on the same line, ALL of them are redacted.
+    """
+    sanitized = line.strip()
+
+    # Pass 1: Redact AWS keys
+    sanitized = re.sub(r'AKIA[0-9A-Z]{16}', 'AKIA[REDACTED_AWS_KEY]', sanitized)
+
+    # Pass 2: Redact all assigned secret values (keys, tokens, passwords, secrets)
+    sanitized = re.sub(
+        r'((?:api[_-]?key|secret|auth[_-]?token|jwt[_-]?secret|password|access[_-]?token)\s*[:=]\s*["\'])([^"\']+)(["\'])',
+        r'\1[REDACTED_SECRET]\3',
+        sanitized,
+        flags=re.IGNORECASE
+    )
+
+    # Pass 3: Redact private key headers
+    sanitized = re.sub(
+        r'-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----',
+        '-----BEGIN [REDACTED_PRIVATE_KEY]-----',
+        sanitized
+    )
+
+    # Pass 4: Redact bearer authorization tokens
+    sanitized = re.sub(
+        r'(Bearer\s+)[a-zA-Z0-9_\-\.]{20,}',
+        r'\1[REDACTED_BEARER_TOKEN]',
+        sanitized,
+        flags=re.IGNORECASE
+    )
+
+    return sanitized[:120]
 
 
 def scan_file(filepath: str) -> List[Dict[str, Any]]:
@@ -129,7 +148,8 @@ def scan_file(filepath: str) -> List[Dict[str, Any]]:
                         if "sanitize" in stripped.lower() or file_has_purify:
                             confidence = "LOW"
 
-                    redacted_snippet = redact_line(stripped, check["type"])
+                    # Multi-pass redaction to protect all secrets on the line
+                    redacted_snippet = sanitize_all_secrets_in_line(stripped)
 
                     issues.append({
                         "file": filepath,
