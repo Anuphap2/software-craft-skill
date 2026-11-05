@@ -1,103 +1,85 @@
 ---
 name: software-craft-skill
-description: Autonomous Virtual Product & Engineering Squad (PM, UI/UX, Dev, QA). Operates in Dual Modes: (1) Autonomous Builder with Self-Healing Loop (Builds features and self-audits until Health Score >= 90) and (2) Deep-Audit & Remediation (Inspects codebases for Big-O, OWASP Security, Zero AI-Slop, and Pre-deploy standards).
+description: Pragmatic Product & Engineering Squad skill for AI agents. Routes tasks across 4 disciplined workflows (Feature Builder, Code Review, Surgical Bug Fix, Pre-Release Audit). Applies progressive disclosure to inspect Big-O complexity heuristics, WCAG accessibility, OWASP patterns, and production verification evidence.
 ---
 
-# Software Craft Skill: Virtual Product & Engineering Squad
+# Software Craft Skill: Engineering Squad Router
 
-This skill equips any AI Agent (Antigravity, Cursor, Claude Code, Copilot) with the disciplined methodology of an elite **Virtual Product Squad (PM, UI/UX Designer, Dev, QA)**. It operates in **Dual Modes**:
-1. 🏗️ **Autonomous Builder & Self-Healing Engine:** Creates new projects and features end-to-end, then autonomously runs local heuristic scanners on its own code to self-heal until meeting enterprise quality standards ($\ge 90/100$).
-2. 🔍 **Deep-Audit & Remediation Inspector:** Evaluates existing codebases for Computer Science rigor, UI/UX Zero AI-Slop, Security vulnerabilities, and Pre-deployment readiness.
-
----
-
-## The 4 Core Dimensions
-
-Whether building or auditing, the agent applies the rigorous principles across all 4 pillars:
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    VIRTUAL PRODUCT SQUAD                        │
-├─────────────────┬──────────────────┬─────────────────┬──────────┤
-│ 1. PM           │ 2. UI/UX         │ 3. DEV          │ 4. QA    │
-│ Architecture    │ Zero AI-Slop     │ ComSci/Big-O    │ Tests    │
-│ Framework Fit   │ WCAG 2.2 AA      │ OWASP Defense   │ Pre-Deploy│
-│ Release Plan    │ Design Tokens    │ Concurrency     │ Standards│
-└─────────────────┴──────────────────┴─────────────────┴──────────┘
-```
-
-Read each domain's detailed criteria:
-1. **PM:** `rules/pm-architecture.md`
-2. **UI/UX:** `rules/uiux-zero-slop-wcag.md`
-3. **Dev (ComSci & Security):** `rules/dev-big-o-security.md`
-4. **QA & DevOps:** `rules/qa-deploy-standards.md`
+This skill equips AI agents with the disciplined engineering workflows of a balanced Product & Engineering Squad (**PM, UI/UX, Dev, QA**). It emphasizes **pragmatic scope containment, honest verification, and progressive disclosure**.
 
 ---
 
-## Operating Mode 1: Autonomous Builder & Self-Healing Loop
+## 🛡️ Core Safety & Scope Guardrails (MANDATORY)
 
-Use this mode when the user asks to **create, implement, scaffold, or refactor a feature or project**:
-
-```
-[User Request] 
-      │
-      ▼
-┌──────────────┐     ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
-│ 1. PM Phase  │ ──► │ 2. UI/UX     │ ──► │ 3. Dev Phase │ ──► │ 4. QA Phase  │
-│ Architecture │     │ Tokens & UX  │     │ Big-O & Sec  │     │ Edge Tests   │
-└──────────────┘     └──────────────┘     └──────────────┘     └──────────────┘
-                                                                      │
-                                                                      ▼
-┌────────────────────────────────────────────────────────┐     ┌──────────────┐
-│ 6. Ship Certified Code (Health Score >= 90 / 100)      │ ◄── │ 5. Self-Audit│
-└────────────────────────────────────────────────────────┘     │ Run Scanners │
-                               ▲                               └──────────────┘
-                               │                                      │
-                               └──── [Score < 90: Auto-Heal] ◄────────┘
-```
-
-### Execution Steps for Building:
-1. **PM Phase (Architecture & Scope):**
-   - Define domain boundaries using Clean Architecture.
-   - Choose frameworks suited for the concurrency and rendering workload.
-2. **UI/UX Phase (Design Tokens & Anti-Slop):**
-   - Establish semantic color tokens (`bg-background`, `text-foreground`, `border-border`).
-   - Eliminate AI-slop: use Lucide SVG icons (no raw emojis), distinct typography hierarchy, contrast $\ge 4.5:1$, and touch targets $\ge 44\times 44\text{px}$.
-   - Ensure all 7 interactive states (Default, Hover, Active, Focus, Disabled, Skeleton, Empty).
-3. **Dev Phase (ComSci Rigor & Security):**
-   - Implement data structures that guarantee optimal asymptotic complexity ($O(1)$ or $O(N)$ instead of nested $O(N^2)$ loops).
-   - Use parameterized database queries and input sanitization to eliminate SQL injection and XSS.
-   - Guard asynchronous code against race conditions and event loop blocking.
-4. **QA Phase (Boundary Tests):**
-   - Write automated unit tests (Jest/Vitest/Pytest) verifying Boundary Value Analysis (Null, empty, overflow, negative values).
-5. **Self-Audit & Auto-Healing Gate (MANDATORY):**
-   - Execute the local heuristic scanners on the newly written code:
-     ```bash
-     python scripts/generate_report.py <directory> <version>
-     ```
-   - **Auto-Healing Rule:** If the overall score is $< 90$ or any **CRITICAL** / **HIGH** issue is detected:
-     1. Analyze the issue output.
-     2. Refactor the code immediately to eliminate the flaw.
-     3. Re-scan until the score is $\ge 90/100$.
-6. **Deliver Certified Code:** Hand over the completed code along with the passing verification score.
+Before executing any action, adhere strictly to these rules:
+1. **Scope Containment:** On bug fixes or small changes, make surgical edits only. Never rewrite unrelated files, refactor architecture, or swap libraries unless explicitly asked.
+2. **Honest Verification:** Never fabricate test pass scores. If test tools are missing or not executed, report truthfully: *"Tests not run (No test runner detected or not requested)"*.
+3. **No Destructive Actions Without Approval:** Never execute destructive commands (`rm -rf`, `git reset --hard`, `git push --force`) without explicit user confirmation.
+4. **Respect Project Conventions:** Use the project's existing framework, UI library, and styling approach (e.g. do NOT force Tailwind onto a project using vanilla CSS or Chakra UI).
 
 ---
 
-## Operating Mode 2: Deep-Audit & Remediation Inspector
+## 🚦 Workflow Router (Select Based on User Intent)
 
-Use this mode when the user asks to **audit, inspect, benchmark, or review an existing codebase**:
+Match the user's prompt to one of the 4 specialized workflows:
 
-### Execution Steps for Auditing:
-1. **Detect Ecosystem & Runtime:** Inspect package manifests (`package.json`, `go.mod`, `Cargo.toml`, `requirements.txt`).
+```
+                                [User Request]
+                                      │
+         ┌────────────────────┬───────┴────────────┬────────────────────┐
+         ▼                    ▼                    ▼                    ▼
+   [Workflow 1]         [Workflow 2]         [Workflow 3]         [Workflow 4]
+  Feature Builder        Code Review       Surgical Bug Fix     Pre-Release Diff
+```
+
+---
+
+### Workflow 1: Feature Builder (Incremental & Verified)
+**When to trigger:** User asks to create, scaffold, or implement a new feature or project.
+1. **Inspect Repo First:** Check existing conventions, folder structure, and manifests (`package.json`, `go.mod`, etc.).
+2. **Progressive Criteria Loading:**
+   - Architecture & Scope: Consult `rules/pm-architecture.md`
+   - UI/UX & Accessibility: Consult `rules/uiux-zero-slop-wcag.md`
+   - Algorithm & Security: Consult `rules/dev-big-o-security.md`
+3. **Implement Feature:** Write clean, modular code respecting existing patterns.
+4. **Heuristic Screening (Self-Check):**
+   ```bash
+   python scripts/generate_report.py <project_directory> <version_tag>
+   ```
+5. **Verify Real Tests (If Available):** If the project has an existing test command (e.g. `npm test`, `pytest`), run it. If no test suite exists, suggest how the user can test it.
+6. **Report Delivery:** Deliver code with summary of implemented features and verification evidence.
+
+---
+
+### Workflow 2: Read-Only Code Review & Audit
+**When to trigger:** User asks to review a pull request, inspect a repo, or check code health.
+1. **Strictly Read-Only:** Do NOT modify or overwrite any user files.
 2. **Run Heuristic Scanners:**
    ```bash
-   python scripts/ast_complexity.py <directory>
-   python scripts/slop_detector.py <directory>
-   python scripts/security_scanner.py <directory>
+   python scripts/ast_complexity.py <project_directory>
+   python scripts/slop_detector.py <project_directory>
+   python scripts/security_scanner.py <project_directory>
    ```
-3. **Synthesize Findings:** Combine AST metrics with qualitative reasoning against `rules/*.md`.
-4. **Calculate Health Score:**
-   $$\text{Overall Score} = 0.20(\text{PM}) + 0.25(\text{UI/UX}) + 0.35(\text{Dev}) + 0.20(\text{QA})$$
-5. **Generate Versioned Report & Patches:**
-   - Render report via `templates/version_audit_report.md`.
-   - Provide unified Git diff patches (`.patch`) ready for immediate application.
+3. **Qualitative Review with Confidence:**
+   - Label findings with confidence levels (`HIGH`, `MEDIUM`, `LOW`).
+   - Differentiate suspicious patterns from confirmed security vulnerabilities.
+   - Consider input scale $N$ before claiming Big-O issues (small bounded arrays are negligible).
+4. **State Verification Boundaries:** Explicitly inform the user what was NOT checked (dynamic runtime, real build, penetration test).
+
+---
+
+### Workflow 3: Surgical Bug Fix & Refactor
+**When to trigger:** User asks to fix an error, debug an issue, or optimize a specific function.
+1. **Locate Root Cause:** Identify the exact file and lines responsible.
+2. **Surgical Diff:** Modify only the minimal necessary lines.
+3. **Regression Prevention:** Run existing relevant tests for that module if a test command exists.
+4. **Explain Fix:** Provide a clear explanation of *why* the bug occurred and *how* the fix resolves it.
+
+---
+
+### Workflow 4: Pre-Release & Version Diff (Baseline Comparison)
+**When to trigger:** User asks for release readiness, version audit (e.g. `v1.0.0` vs `v1.1.0`), or pre-deploy check.
+1. **Baseline Comparison:** Compare current changes against the previous Git tag or commit baseline (`git diff <base_tag>..HEAD`).
+2. **Consult Checklist:** Review `rules/qa-deploy-standards.md` for environment validation, secret leakage, and build checks.
+3. **Verify Build & Tests:** Request or run actual build (`npm run build`, `go build`) and real test suite.
+4. **Output Report:** Render findings using `templates/version_audit_report.md`.

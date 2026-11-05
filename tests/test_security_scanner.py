@@ -14,19 +14,19 @@ from security_scanner import scan_file
 
 class TestSecurityScanner(unittest.TestCase):
     def setUp(self):
-        self.test_file = "test_sample_sec.py"
+        self.test_file = "sample_service.py"
 
     def tearDown(self):
         if os.path.exists(self.test_file):
             os.remove(self.test_file)
 
-    def test_detects_raw_sql_injection(self):
+    def test_detects_raw_sql_injection_pattern(self):
         code = 'query = "SELECT * FROM users WHERE email = \'" + user_email + "\'"'
         with open(self.test_file, "w", encoding="utf-8") as f:
             f.write(code)
 
         issues = scan_file(self.test_file)
-        self.assertTrue(any(i["type"] == "RAW_SQL_INJECTION_RISK" for i in issues))
+        self.assertTrue(any(i["type"] == "SUSPICIOUS_RAW_SQL_CONCATENATION" for i in issues))
 
     def test_detects_dangerous_eval(self):
         code = 'result = eval(user_untrusted_input)'
@@ -34,15 +34,15 @@ class TestSecurityScanner(unittest.TestCase):
             f.write(code)
 
         issues = scan_file(self.test_file)
-        self.assertTrue(any(i["type"] == "DANGEROUS_EVAL_EXEC" for i in issues))
+        self.assertTrue(any(i["type"] == "SUSPICIOUS_DYNAMIC_EXECUTION" for i in issues))
 
-    def test_detects_hardcoded_aws_key(self):
-        code = 'AWS_KEY = "AKIAIOSFODNN7EXAMPLE"'
+    def test_detects_suspicious_aws_key(self):
+        code = 'AWS_KEY = "AKIA3F4H7K9M2P5R8T1W"'
         with open(self.test_file, "w", encoding="utf-8") as f:
             f.write(code)
 
         issues = scan_file(self.test_file)
-        self.assertTrue(any(i["type"] == "HARDCODED_AWS_KEY" for i in issues))
+        self.assertTrue(any(i["type"] == "SUSPICIOUS_AWS_KEY_PATTERN" for i in issues))
 
 
 if __name__ == "__main__":

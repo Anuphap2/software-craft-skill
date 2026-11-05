@@ -1,48 +1,35 @@
-# PM & Product Architecture Rules
+# PM & Architecture Guidelines (Pragmatic & Context-Aware)
 
 ## 1. Objective
-Guide the agent to evaluate the project's high-level architecture, tech stack fit, domain boundaries, and version release lifecycle with the strategic rigor of a Principal Technical Product Manager.
+Guide software architecture, technology selection, and scope management with practical, business-aligned judgment.
+Prioritize pragmatic incremental improvement over dogmatic rewrites.
 
 ---
 
-## 2. Framework & Tech Stack Suitability Matrix
+## 2. Scope Management & Change Boundaries
 
-Evaluate whether the chosen framework fits the application's core requirements:
+Determine the appropriate level of intervention based on user intent:
 
-| Workload Requirement | Optimal Stack / Framework | Anti-Pattern / Warning Signs |
+| Task Type | Permitted Scope | Prohibited Scope |
 | :--- | :--- | :--- |
-| **SEO, Fast Initial Paint, Content/E-commerce** | Next.js (App Router / SSR / SSG), Astro, Remix | Heavy Client-Only SPA (Vite/React) with slow blank-screen bundle |
-| **High-frequency Concurrency / Real-time / Streaming** | Go, Elixir (Phoenix), Node.js (with Worker Threads / BullMQ) | Synchronous Python/Django blocking main thread on long I/O |
-| **Data Intensive / Machine Learning** | Python (FastAPI), Rust bindings | Node.js trying to perform heavy matrix math on event loop |
-| **High-density Enterprise Internal Tools** | Vite + React + TanStack Table / NestJS | Overcomplicated micro-frontends with excessive overhead |
-
-### Evaluation Criteria:
-- **I/O Bound vs. Compute Bound:** Does the framework choice respect the language's threading/concurrency model?
-- **Over-Engineering vs. Under-Engineering:** Are microservices used where a modular monolith would be $10\times$ simpler and faster?
+| **Small Bug Fix** | Edit ONLY the affected function/module. Preserve all existing patterns. | Do NOT restructure folders or refactor unrelated files. |
+| **Feature Addition** | Add new modules following existing project conventions. | Do NOT change core libraries (e.g. switching ORMs or UI libraries) unless requested. |
+| **Full Project Scaffold** | Apply Clean Architecture and modern framework best practices. | Do NOT introduce unnecessary microservices where a monolith suffices. |
 
 ---
 
-## 3. Structural & Architectural Integrity
-Inspect the folder organization and separation of concerns:
-1. **Clean Architecture / Layered Separation:**
-   - **Domain / Entities:** Pure business logic, independent of UI or Database frameworks.
-   - **Use Cases / Services:** Application business rules orchestrating data flow.
-   - **Controllers / Presenters:** Translates requests/responses.
-   - **Infrastructure / Data Access:** Database drivers, external API clients, file storage.
-2. **Flag Violations:**
-   - Raw SQL queries or database ORM calls directly inside UI view components (e.g., inside React client components).
-   - Business calculation logic tightly coupled inside HTTP controller handlers.
-   - Circular dependencies between domain modules.
+## 3. Technology & Framework Suitability
+
+Evaluate tech choices based on trade-offs rather than absolute preferences:
+* **Respect Existing Choices:** If a team chose React SPA, Django, or NestJS, work within that ecosystem rather than declaring it obsolete.
+* **Identify Real Constraints:** Flag architectural issues only when there is a concrete bottleneck (e.g. single-threaded CPU-heavy jobs blocking Node.js event loop, or missing caching on expensive external APIs).
 
 ---
 
-## 4. Semantic Versioning (SemVer) & Release Management
-Check the project's release readiness:
-* **Version Format:** `MAJOR.MINOR.PATCH`
-  * `MAJOR`: Incompatible API changes or schema breaking changes.
-  * `MINOR`: Backward-compatible feature additions.
-  * `PATCH`: Backward-compatible bug fixes.
-* **Breaking Changes Tracking:**
-  * Are deleted or renamed database columns preceded by a migration deprecation window?
-  * Are public API route changes accompanied by versioning (`/v1`, `/v2`) or deprecation headers?
-* **Changelog Hygiene:** Does every version increment have an explicit, categorized changelog (Added, Changed, Deprecated, Removed, Fixed, Security)?
+## 4. Release Planning & Versioning
+* **Semantic Versioning (SemVer):**
+  - Major increment for breaking API/schema changes.
+  - Minor increment for backward-compatible capabilities.
+  - Patch increment for bug fixes.
+* **Baseline Comparison:**
+  - When reviewing versions, compare against the previous Git commit/tag baseline rather than relying on an isolated snapshot.

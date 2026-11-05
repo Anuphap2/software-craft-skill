@@ -8,7 +8,6 @@ import unittest
 import os
 import sys
 
-# Add scripts directory to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "scripts")))
 from ast_complexity import scan_file
 
@@ -34,7 +33,7 @@ def sample_function(items):
             f.write(code)
 
         issues = scan_file(self.test_py_file)
-        self.assertTrue(any(i["type"] == "NESTED_LOOP" and i["estimated_complexity"] == "O(N^2)" for i in issues))
+        self.assertTrue(any(i["type"] == "HEURISTIC_NESTED_LOOP" and i["estimated_complexity"] == "O(N^2)" for i in issues))
 
     def test_detects_inner_linear_search_js(self):
         code = """
@@ -49,7 +48,7 @@ const enrich = (users, profiles) => {
             f.write(code)
 
         issues = scan_file(self.test_js_file)
-        self.assertTrue(any(i["type"] == "INNER_LINEAR_SEARCH" for i in issues))
+        self.assertTrue(any(i["type"] == "HEURISTIC_INNER_LINEAR_SEARCH" for i in issues))
 
 
 if __name__ == "__main__":

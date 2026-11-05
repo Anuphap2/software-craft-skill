@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """
-AST & Algorithmic Complexity Scanner (Big-O & Loop Nesting Analyzer)
+AST & Algorithmic Complexity Heuristic Scanner
 Part of software-craft-skill.
-Inspects source files for nested loops, inner array lookups, and algorithmic bottlenecks.
+Scans source files for nested loops and linear search patterns.
+NOTE: This is a static heuristic scanner. Findings represent potential candidates
+for optimization and require human engineering review considering actual data volume (N).
 """
 
 import ast
@@ -12,94 +14,147 @@ import sys
 import json
 from typing import List, Dict, Any
 
-class ComplexityVisitor(ast.NodeVisitor):
-    """AST visitor for Python files to measure loop depth and nested operations."""
+IGNORED_DIRS = {
+    ".git", "node_modules", ".next", "dist", "build", "out",
+    "__pycache__", ".venv", "venv", "env", "tests", "test",
+    "vendor", "coverage", ".turbo", ".cache", "generated"
+}
+
+IGNORED_FILE_EXTENSIONS = {
+    ".min.js", ".min.css", ".d.ts", ".map", ".bundle.js", ".generated.ts"
+}
+
+
+class PythonComplexityVisitor(ast.NodeVisitor):
+    """AST visitor for Python files tracking loop nesting and data-scale context."""
     def __init__(self, filepath: str):
         self.filepath = filepath
-        self.current_loop_depth = 0
-        self.max_loop_depth = 0
+        self.loop_stack: List[ast.AST] = []
         self.issues: List[Dict[str, Any]] = []
 
     def visit_For(self, node):
-        self._enter_loop(node)
+        self._check_loop(node)
+        self.loop_stack.append(node)
         self.generic_visit(node)
-        self._exit_loop()
+        self.loop_stack.pop()
 
     def visit_While(self, node):
-        self._enter_loop(node)
+        self._check_loop(node)
+        self.loop_stack.append(node)
         self.generic_visit(node)
-        self._exit_loop()
+        self.loop_stack.pop()
 
-    def _enter_loop(self, node):
-        self.current_loop_depth += 1
-        if self.current_loop_depth > self.max_loop_depth:
-            self.max_loop_depth = self.current_loop_depth
+    def _is_small_constant_range(self, node) -> bool:
+        """Checks if loop iterates over a small known constant (e.g. range(3))."""
+        if isinstance(node, ast.For) and isinstance(node.iter, ast.Call):
+            if isinstance(node.iter.func, ast.Name) and node.iter.func.id == "range":
+                if node.iter.args and isinstance(node.iter.args[0], ast.Constant):
+                    if isinstance(node.iter.args[0].value, int) and node.iter.args[0].value <= 10:
+                        return True
+        return False
 
-        if self.current_loop_depth >= 2:
+    def _check_loop(self, node):
+        depth = len(self.loop_stack) + 1
+        if depth >= 2:
+            is_small = self._is_small_constant_range(node)
+            confidence = "LOW" if is_small else ("HIGH" if depth >= 3 else "MEDIUM")
+            note = "Loop operates on small constant range (negligible runtime impact)." if is_small else "Verify if dataset size N is unbounded in production."
+
             self.issues.append({
                 "file": self.filepath,
-                "line": node.lineno,
-                "type": "NESTED_LOOP",
-                "depth": self.current_loop_depth,
-                "estimated_complexity": f"O(N^{self.current_loop_depth})",
-                "severity": "CRITICAL" if self.current_loop_depth >= 3 else "HIGH",
-                "message": f"Nested loop detected with depth {self.current_loop_depth} (Potential O(N^{self.current_loop_depth}) complexity)."
+                "line": getattr(node, "lineno", 1),
+                "type": "HEURISTIC_NESTED_LOOP",
+                "depth": depth,
+                "estimated_complexity": f"O(N^{depth})",
+                "confidence": confidence,
+                "scale_context": note,
+                "human_review_required": True,
+                "message": f"Potential O(N^{depth}) nested loop candidate detected at depth {depth}. ({note})"
             })
 
-    def _exit_loop(self):
-        self.current_loop_depth -= 1
+
+def strip_comments_and_strings(code: str) -> str:
+    """Strips comments and basic string literals to prevent brace-counting distortion."""
+    # Remove block comments
+    code = re.sub(r'/\*[\s\S]*?\*/', '', code)
+    # Remove single line comments
+    code = re.sub(r'//.*', '', code)
+    # Replace string literals with dummy placeholder
+    code = re.sub(r'"(?:\\.|[^"\\])*"', '""', code)
+    code = re.sub(r"'(?:\\.|[^'\\])*'", "''", code)
+    code = re.sub(r'`(?:\\.|[^`\\])*`', '``', code)
+    return code
 
 
 def scan_js_ts_complexity(filepath: str, content: str) -> List[Dict[str, Any]]:
-    """Heuristic scanner for JS/TS/JSX/TSX files detecting nested loops and inner array scans."""
+    """Heuristic scanner for JS/TS with improved brace balancing and token awareness."""
     issues = []
-    lines = content.splitlines()
+    clean_content = strip_comments_and_strings(content)
+    lines = clean_content.splitlines()
 
-    # Pattern for inner lookups inside loops: .find, .filter, .includes, .some, .every
     inner_lookup_pattern = re.compile(r'\.(find|filter|includes|some|every|indexOf)\s*\(')
     loop_pattern = re.compile(r'\b(for\s*\(|while\s*\(|\.forEach\s*\(|\.map\s*\()')
 
-    loop_stack = []
+    brace_depth = 0
+    loop_scopes: List[int] = []  # Stores brace depths where loops were initiated
 
     for idx, line in enumerate(lines, 1):
         stripped = line.strip()
-        # Count open braces to approximate scope
+        if not stripped:
+            continue
+
+        # Check if line initiates a loop
         if loop_pattern.search(stripped):
-            loop_stack.append(idx)
-            if len(loop_stack) >= 2:
+            loop_scopes.append(brace_depth)
+            current_loop_depth = len(loop_scopes)
+            if current_loop_depth >= 2:
                 issues.append({
                     "file": filepath,
                     "line": idx,
-                    "type": "NESTED_LOOP",
-                    "depth": len(loop_stack),
-                    "estimated_complexity": f"O(N^{len(loop_stack)})",
-                    "severity": "CRITICAL" if len(loop_stack) >= 3 else "HIGH",
-                    "message": f"Nested iteration loop detected at depth {len(loop_stack)} (Potential O(N^{len(loop_stack)}) bottleneck)."
+                    "type": "HEURISTIC_NESTED_LOOP",
+                    "depth": current_loop_depth,
+                    "estimated_complexity": f"O(N^{current_loop_depth})",
+                    "confidence": "MEDIUM",
+                    "scale_context": "Heuristic match. Verify if input arrays are small (e.g. enum options) or large datasets.",
+                    "human_review_required": True,
+                    "message": f"Candidate nested iteration detected (apparent depth {current_loop_depth}). Verify dataset bounds before refactoring."
                 })
-        
-        # Check for inner linear search within any active loop
-        if len(loop_stack) >= 1:
+
+        # Check for inner linear search within loop
+        if loop_scopes:
             match = inner_lookup_pattern.search(stripped)
             if match:
                 method = match.group(1)
                 issues.append({
                     "file": filepath,
                     "line": idx,
-                    "type": "INNER_LINEAR_SEARCH",
-                    "depth": len(loop_stack) + 1,
+                    "type": "HEURISTIC_INNER_LINEAR_SEARCH",
+                    "depth": len(loop_scopes) + 1,
                     "estimated_complexity": "O(N * M)",
-                    "severity": "HIGH",
-                    "message": f"Inner linear search `.{method}()` detected inside iteration loop at line {idx}. Consider pre-indexing into a Map or Set for O(1) lookup."
+                    "confidence": "MEDIUM",
+                    "scale_context": "If inner collection M is small (<20 items), overhead of building a Map exceeds linear scan.",
+                    "human_review_required": True,
+                    "message": f"Inner search `.{method}()` detected inside loop. Pre-indexing into Map/Set is only beneficial if collection is large."
                 })
 
-        # Rough heuristic for block exit
-        if '}' in stripped and loop_stack:
-            loop_stack.pop()
+        # Track brace balance
+        open_braces = stripped.count('{')
+        close_braces = stripped.count('}')
+        brace_depth += open_braces - close_braces
+
+        # Remove exited loops
+        while loop_scopes and brace_depth <= loop_scopes[-1]:
+            loop_scopes.pop()
 
     return issues
 
 
 def scan_file(filepath: str) -> List[Dict[str, Any]]:
+    # Skip generated and vendor files
+    basename = os.path.basename(filepath)
+    if any(basename.endswith(ext) for ext in IGNORED_FILE_EXTENSIONS):
+        return []
+
     issues = []
     try:
         with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
@@ -108,7 +163,7 @@ def scan_file(filepath: str) -> List[Dict[str, Any]]:
         if filepath.endswith(".py"):
             try:
                 tree = ast.parse(content, filename=filepath)
-                visitor = ComplexityVisitor(filepath)
+                visitor = PythonComplexityVisitor(filepath)
                 visitor.visit(tree)
                 issues.extend(visitor.issues)
             except SyntaxError:
@@ -124,10 +179,9 @@ def scan_file(filepath: str) -> List[Dict[str, Any]]:
 def scan_directory(target_dir: str) -> Dict[str, Any]:
     all_issues = []
     scanned_files = 0
-    ignored_dirs = {".git", "node_modules", ".next", "dist", "build", "__pycache__", ".venv", "venv", "tests"}
 
     for root, dirs, files in os.walk(target_dir):
-        dirs[:] = [d for d in dirs if d not in ignored_dirs]
+        dirs[:] = [d for d in dirs if d not in IGNORED_DIRS and not d.startswith(".")]
         for file in files:
             ext = os.path.splitext(file)[1].lower()
             if ext in {".py", ".js", ".jsx", ".ts", ".tsx"}:
@@ -138,6 +192,7 @@ def scan_directory(target_dir: str) -> Dict[str, Any]:
 
     return {
         "target_directory": os.path.abspath(target_dir),
+        "scanner": "AST & Complexity Heuristic Scanner (Non-formal static approximation)",
         "files_scanned": scanned_files,
         "total_issues": len(all_issues),
         "issues": all_issues

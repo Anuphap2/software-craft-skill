@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 """
-Security & Vulnerability Scanner (OWASP Top 10 & Secret Leaks)
+Security Pattern Heuristic Scanner
 Part of software-craft-skill.
-Detects hardcoded API keys, raw SQL query concatenation, dangerous evals, and injection risks.
+Detects static suspicious patterns (credentials, raw queries, eval).
+DISCLAIMER: This is a static regex heuristic scanner, NOT an enterprise SAST tool
+(such as Snyk, Semgrep, SonarQube) or a certified OWASP security audit.
+Findings represent suspicious patterns that require developer context verification.
 """
 
 import os
@@ -11,74 +14,114 @@ import sys
 import json
 from typing import List, Dict, Any
 
-# Security patterns
+IGNORED_DIRS = {
+    ".git", "node_modules", ".next", "dist", "build", "out",
+    "__pycache__", ".venv", "venv", "env", "tests", "test",
+    "vendor", "coverage", "mock", "mocks", "fixtures", "generated"
+}
+
+DUMMY_SECRET_PATTERNS = re.compile(
+    r'(your[_-]?api[_-]?key|dummy|example|placeholder|changeme|test[_-]?secret|xxx+|12345)',
+    re.IGNORECASE
+)
+
+# Heuristic Security Pattern Definitions
 PATTERNS = [
     {
-        "type": "HARDCODED_AWS_KEY",
-        "severity": "CRITICAL",
+        "type": "SUSPICIOUS_AWS_KEY_PATTERN",
+        "category": "CREDENTIALS",
         "pattern": re.compile(r'\b(AKIA[0-9A-Z]{16})\b'),
-        "message": "Potential hardcoded AWS Access Key ID detected. Move to environment variables immediately."
+        "default_confidence": "HIGH",
+        "verification_advice": "Check if this key is active in AWS IAM console. If real, revoke immediately and rotate."
     },
     {
-        "type": "HARDCODED_PRIVATE_KEY",
-        "severity": "CRITICAL",
+        "type": "SUSPICIOUS_PRIVATE_KEY_HEADER",
+        "category": "CREDENTIALS",
         "pattern": re.compile(r'-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----'),
-        "message": "Private encryption key embedded directly in source code. Revoke and move to secure secret storage."
+        "default_confidence": "HIGH",
+        "verification_advice": "Ensure private keys are never stored in version control. Use a secret manager."
     },
     {
-        "type": "HARDCODED_GENERIC_SECRET",
-        "severity": "HIGH",
-        "pattern": re.compile(r'(?:api[_-]?key|secret|auth[_-]?token|password)\s*[:=]\s*["\']([a-zA-Z0-9_\-\.]{16,})["\']', re.IGNORECASE),
-        "message": "Suspected hardcoded API key, token, or password found in assignment."
+        "type": "SUSPICIOUS_ASSIGNED_SECRET",
+        "category": "CREDENTIALS",
+        "pattern": re.compile(r'(?:api[_-]?key|secret|auth[_-]?token|jwt[_-]?secret)\s*[:=]\s*["\']([a-zA-Z0-9_\-\.]{20,})["\']', re.IGNORECASE),
+        "default_confidence": "MEDIUM",
+        "verification_advice": "Verify if this is a live production credential or a benign development fixture."
     },
     {
-        "type": "RAW_SQL_INJECTION_RISK",
-        "severity": "CRITICAL",
+        "type": "SUSPICIOUS_RAW_SQL_CONCATENATION",
+        "category": "INJECTION",
         "pattern": re.compile(r'(?:SELECT|INSERT|UPDATE|DELETE)\s+.*(?:\+\s*[\w\.]+|\$\{[^\}]+\})', re.IGNORECASE),
-        "message": "Raw SQL query concatenation detected. Use parameterized queries or prepared statements to prevent SQL Injection."
+        "default_confidence": "HIGH",
+        "verification_advice": "Review whether parameters are already validated/sanitized or if parameterized queries ($1, ?) can be used."
     },
     {
-        "type": "DANGEROUS_EVAL_EXEC",
-        "severity": "CRITICAL",
+        "type": "SUSPICIOUS_DYNAMIC_EXECUTION",
+        "category": "CODE_EXECUTION",
         "pattern": re.compile(r'\b(?:eval|exec)\s*\('),
-        "message": "Direct use of `eval()` or `exec()` detected. Dynamic code execution leads to Remote Code Execution (RCE)."
+        "default_confidence": "MEDIUM",
+        "verification_advice": "Check if arguments originate from untrusted user input. Refactor to static parser/lookup if possible."
     },
     {
-        "type": "UNSAFE_INNER_HTML",
-        "severity": "HIGH",
+        "type": "SUSPICIOUS_UNESCAPED_HTML",
+        "category": "XSS",
         "pattern": re.compile(r'\bdangerouslySetInnerHTML\b|\.innerHTML\s*='),
-        "message": "Unsafe direct HTML injection detected (`dangerouslySetInnerHTML` / `.innerHTML`). Susceptible to Cross-Site Scripting (XSS)."
+        "default_confidence": "MEDIUM",
+        "verification_advice": "Check if content is sanitized with DOMPurify or sanitize-html before rendering."
     },
     {
-        "type": "REDOS_VULNERABLE_REGEX",
-        "severity": "HIGH",
+        "type": "SUSPICIOUS_NESTED_REGEX_QUANTIFIER",
+        "category": "REDOS",
         "pattern": re.compile(r'\(\s*[\w\.\+\*]+\s*[\+\*]\s*\)\s*[\+\*]'),
-        "message": "Nested quantifier regex detected (e.g. `(a+)+`). Vulnerable to Regular Expression Denial of Service (ReDoS)."
+        "default_confidence": "MEDIUM",
+        "verification_advice": "Test regex with pathological backtracking inputs to check for ReDoS vulnerability."
     }
 ]
 
 
 def scan_file(filepath: str) -> List[Dict[str, Any]]:
+    # Skip test files and mock fixtures
+    basename = os.path.basename(filepath).lower()
+    if any(k in basename for k in ["test", "spec", "mock", "fixture", "example"]):
+        return []
+
     issues = []
     try:
         with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
             lines = f.readlines()
 
+        file_has_purify = any("dompurify" in l.lower() or "sanitize" in l.lower() for l in lines)
+
         for idx, line in enumerate(lines, 1):
             stripped = line.strip()
-            # Skip pure comment lines
-            if stripped.startswith("//") or stripped.startswith("#") or stripped.startswith("/*"):
+            # Skip comments
+            if stripped.startswith("//") or stripped.startswith("#") or stripped.startswith("/*") or stripped.startswith("*"):
                 continue
 
             for check in PATTERNS:
-                if check["pattern"].search(stripped):
+                match = check["pattern"].search(stripped)
+                if match:
+                    matched_str = match.group(0)
+                    # Ignore obvious dummy strings
+                    if DUMMY_SECRET_PATTERNS.search(matched_str):
+                        continue
+
+                    confidence = check["default_confidence"]
+                    # Context relaxation: if dangerouslySetInnerHTML has DOMPurify in the line or file, mark LOW confidence
+                    if check["type"] == "SUSPICIOUS_UNESCAPED_HTML":
+                        if "sanitize" in stripped.lower() or file_has_purify:
+                            confidence = "LOW"
+
                     issues.append({
                         "file": filepath,
                         "line": idx,
-                        "category": "DEV_SECURITY",
-                        "severity": check["severity"],
                         "type": check["type"],
-                        "message": check["message"]
+                        "category": check["category"],
+                        "confidence": confidence,
+                        "classification": "SUSPICIOUS_PATTERN_HEURISTIC",
+                        "verification_advice": check["verification_advice"],
+                        "snippet": stripped[:120],
+                        "message": f"Suspicious pattern matched: {check['type']}. (Confidence: {confidence})"
                     })
     except Exception as e:
         sys.stderr.write(f"Error scanning {filepath}: {e}\n")
@@ -89,15 +132,13 @@ def scan_file(filepath: str) -> List[Dict[str, Any]]:
 def scan_directory(target_dir: str) -> Dict[str, Any]:
     all_issues = []
     scanned_files = 0
-    ignored_dirs = {".git", "node_modules", ".next", "dist", "build", "__pycache__", ".venv", "venv", ".idea", "tests"}
-    code_exts = {".py", ".js", ".jsx", ".ts", ".tsx", ".go", ".rs", ".java", ".php", ".rb", ".json", ".env"}
+    code_exts = {".py", ".js", ".jsx", ".ts", ".tsx", ".go", ".rs", ".java", ".php", ".rb"}
 
     for root, dirs, files in os.walk(target_dir):
-        dirs[:] = [d for d in dirs if d not in ignored_dirs]
+        dirs[:] = [d for d in dirs if d not in IGNORED_DIRS and not d.startswith(".")]
         for file in files:
             ext = os.path.splitext(file)[1].lower()
-            if ext in code_exts or file.startswith(".env"):
-                # Warning for committed .env files containing real secrets
+            if ext in code_exts:
                 filepath = os.path.join(root, file)
                 issues = scan_file(filepath)
                 all_issues.extend(issues)
@@ -105,6 +146,8 @@ def scan_directory(target_dir: str) -> Dict[str, Any]:
 
     return {
         "target_directory": os.path.abspath(target_dir),
+        "scanner": "Static Security Pattern Matcher (Regex Heuristic)",
+        "disclaimer": "Heuristic screening only. Not a formal SAST or OWASP certification.",
         "files_scanned": scanned_files,
         "total_issues": len(all_issues),
         "issues": all_issues

@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """
-UI/UX Slop & Accessibility Scanner (Zero AI-Slop & WCAG Gate)
+UI/UX Heuristic & Accessibility Scanner
 Part of software-craft-skill.
-Detects unstyled emojis, generic purple/blue gradients, arbitrary non-token CSS, and accessibility flaws.
+Inspects front-end markup for accessibility risks (WCAG 2.2 AA) and styling consistency.
+NOTE: Design guidelines are advisory. Adapt findings to the project's brand design system.
 """
 
 import os
@@ -11,31 +12,32 @@ import sys
 import json
 from typing import List, Dict, Any
 
-# Common emoji regex pattern (excluding basic ascii)
+IGNORED_DIRS = {
+    ".git", "node_modules", ".next", "dist", "build", "out",
+    "__pycache__", ".venv", "venv", "env", "tests", "test",
+    "vendor", "coverage", "storybook-static"
+}
+
+# Unlabelled interactive emoji (e.g. <button>🚀</button> without aria-label)
 EMOJI_PATTERN = re.compile(
     r'[\U0001F300-\U0001F6FF\U0001F900-\U0001F9FF\U0001FA70-\U0001FAFF\U00002702-\U000027B0\U0001F680-\U0001F6C0]'
 )
 
-# AI Slop Gradients: generic purple-to-blue / indigo-to-purple without semantic meaning
-SLOP_GRADIENT_PATTERN = re.compile(
-    r'(from-purple-\d+\s+to-blue-\d+|from-blue-\d+\s+to-purple-\d+|from-indigo-\d+\s+to-purple-\d+|from-violet-\d+\s+to-pink-\d+)'
+# Gradient heuristics (advisory)
+GENERIC_GRADIENT_PATTERN = re.compile(
+    r'(from-purple-\d+\s+to-blue-\d+|from-blue-\d+\s+to-purple-\d+|from-violet-\d+\s+to-pink-\d+)'
 )
 
-# Arbitrary hardcoded Tailwind utility values (e.g. p-[17px], text-[#123456])
+# Arbitrary hardcoded Tailwind utility values (e.g. p-[17px])
 ARBITRARY_TAILWIND_PATTERN = re.compile(
     r'\b(p|m|px|py|pt|pb|pl|pr|w|h|text|bg|border)-\[([^\]]+)\]'
 )
 
-# Meaningless uppercase tracked-out eyebrow labels
-TRACKED_EYEBROW_PATTERN = re.compile(
-    r'\b(tracking-(?:widest|\[0\.\d+em\])\s+uppercase\s+text-(?:xs|\[10px\])|uppercase\s+tracking-(?:widest|\[0\.\d+em\])\s+text-(?:xs|\[10px\]))'
-)
-
-# Inline style attribute in JSX/HTML
-INLINE_STYLE_PATTERN = re.compile(r'style=\{\{[^}]+\}\}')
-
-# Dangerous outline-none without focus-visible
+# Dangerous outline-none without focus-visible (Definite WCAG keyboard issue)
 OUTLINE_NONE_PATTERN = re.compile(r'\boutline-none\b(?!.*focus-visible:)')
+
+# Missing image alt attribute
+IMG_TAG_PATTERN = re.compile(r'<img\b(?![^>]*\balt=)[^>]*>')
 
 
 def scan_content(filepath: str, content: str) -> List[Dict[str, Any]]:
@@ -47,84 +49,69 @@ def scan_content(filepath: str, content: str) -> List[Dict[str, Any]]:
         if not stripped or stripped.startswith("//") or stripped.startswith("/*"):
             continue
 
-        # 1. Check for Raw Emojis in JSX/HTML tags
-        if any(tag in stripped for tag in ["<button", "<span", "<h1", "<h2", "<h3", "<p", "<a", "<div"]):
-            emoji_matches = EMOJI_PATTERN.findall(stripped)
-            if emoji_matches:
+        # 1. Accessibility: Unlabelled Emoji in Interactive elements
+        if "<button" in stripped or "<a " in stripped:
+            if EMOJI_PATTERN.search(stripped) and "aria-label" not in stripped and "title=" not in stripped:
                 issues.append({
                     "file": filepath,
                     "line": idx,
-                    "category": "UIUX_AI_SLOP",
-                    "severity": "HIGH",
-                    "type": "UNSTYLED_EMOJI",
-                    "found": ", ".join(set(emoji_matches)),
-                    "message": f"Unstyled emoji '{emoji_matches[0]}' used directly in UI component. Use professional SVG icons (e.g., Lucide React) instead of raw emojis."
+                    "type": "ACCESSIBILITY_UNLABELLED_EMOJI_CONTROL",
+                    "confidence": "HIGH",
+                    "category": "WCAG_ACCESSIBILITY",
+                    "advice": "Add `aria-label` or visually-hidden text so screen readers can announce the button's action.",
+                    "message": "Interactive element contains emoji without an accessible label (aria-label/title)."
                 })
 
-        # 2. Check for Generic AI Slop Gradients
-        gradient_match = SLOP_GRADIENT_PATTERN.search(stripped)
+        # 2. Accessibility: outline-none without focus-visible
+        if OUTLINE_NONE_PATTERN.search(stripped) and ("<button" in stripped or "<a " in stripped or "<input" in stripped):
+            issues.append({
+                "file": filepath,
+                "line": idx,
+                "type": "ACCESSIBILITY_REMOVED_FOCUS_OUTLINE",
+                "confidence": "HIGH",
+                "category": "WCAG_ACCESSIBILITY",
+                "advice": "Replace with `focus-visible:ring-2 focus-visible:ring-offset-2` or an equivalent visible focus ring.",
+                "message": "Focus indicator removed via `outline-none` without a `focus-visible:` alternative (WCAG 2.2 AA 2.4.7)."
+            })
+
+        # 3. Accessibility: Missing alt on <img>
+        if IMG_TAG_PATTERN.search(stripped):
+            issues.append({
+                "file": filepath,
+                "line": idx,
+                "type": "ACCESSIBILITY_MISSING_IMG_ALT",
+                "confidence": "HIGH",
+                "category": "WCAG_ACCESSIBILITY",
+                "advice": "Provide descriptive `alt=\"...\"` text, or `alt=\"\"` if the image is purely decorative.",
+                "message": "Image element (`<img>`) is missing an `alt` attribute."
+            })
+
+        # 4. Token Consistency: Arbitrary Tailwind values (Advisory)
+        arbitrary_matches = ARBITRARY_TAILWIND_PATTERN.findall(stripped)
+        if arbitrary_matches:
+            for prefix, val in arbitrary_matches:
+                if not val.startswith("var(") and not val.startswith("--"):
+                    issues.append({
+                        "file": filepath,
+                        "line": idx,
+                        "type": "DESIGN_TOKEN_ARBITRARY_VALUE",
+                        "confidence": "LOW",
+                        "category": "TOKEN_HYGIENE",
+                        "advice": "Consider aligning with your project's design token scale (e.g. standard spacing/color palette).",
+                        "message": f"Arbitrary utility `{prefix}-[{val}]` detected. Review if project design tokens provide a standard alternative."
+                    })
+
+        # 5. Visual Consistency: Generic SaaS Gradient (Advisory)
+        gradient_match = GENERIC_GRADIENT_PATTERN.search(stripped)
         if gradient_match:
             issues.append({
                 "file": filepath,
                 "line": idx,
-                "category": "UIUX_AI_SLOP",
-                "severity": "MEDIUM",
-                "type": "GENERIC_PURPLE_GRADIENT",
-                "found": gradient_match.group(0),
-                "message": f"Generic AI-slop gradient '{gradient_match.group(0)}' detected. Use purposeful semantic background tokens or solid contrasting surfaces."
-            })
-
-        # 3. Check for Meaningless Tracked-Out Eyebrows
-        eyebrow_match = TRACKED_EYEBROW_PATTERN.search(stripped)
-        if eyebrow_match:
-            issues.append({
-                "file": filepath,
-                "line": idx,
-                "category": "UIUX_AI_SLOP",
-                "severity": "LOW",
-                "type": "TRACKED_EYEBROW_LABEL",
-                "found": eyebrow_match.group(0),
-                "message": "Meaningless tracked-out uppercase eyebrow label detected. Simplify hierarchy with strong, clean heading typography."
-            })
-
-        # 4. Check for Arbitrary Tailwind Values
-        arbitrary_matches = ARBITRARY_TAILWIND_PATTERN.findall(stripped)
-        if arbitrary_matches:
-            for prefix, val in arbitrary_matches:
-                # Allow standard css vars like bg-[var(--...)]
-                if not val.startswith("var("):
-                    issues.append({
-                        "file": filepath,
-                        "line": idx,
-                        "category": "UIUX_TOKEN_HYGIENE",
-                        "severity": "MEDIUM",
-                        "type": "ARBITRARY_CSS_VALUE",
-                        "found": f"{prefix}-[{val}]",
-                        "message": f"Arbitrary hardcoded CSS '{prefix}-[{val}]' bypasses design tokens. Use standard theme spacing/color tokens."
-                    })
-
-        # 5. Check for Removed Outline without focus-visible (Accessibility risk)
-        if OUTLINE_NONE_PATTERN.search(stripped) and "<button" in stripped:
-            issues.append({
-                "file": filepath,
-                "line": idx,
-                "category": "UIUX_ACCESSIBILITY",
-                "severity": "HIGH",
-                "type": "REMOVED_OUTLINE_WITHOUT_FOCUS_VISIBLE",
-                "found": "outline-none",
-                "message": "Button removes focus outline (`outline-none`) without `focus-visible:` ring. This violates WCAG 2.2 keyboard navigation."
-            })
-
-        # 6. Check for Inline Styles
-        if INLINE_STYLE_PATTERN.search(stripped):
-            issues.append({
-                "file": filepath,
-                "line": idx,
-                "category": "UIUX_TOKEN_HYGIENE",
-                "severity": "LOW",
-                "type": "INLINE_STYLE_PROP",
-                "found": "style={{...}}",
-                "message": "Inline style detected. Migrate to semantic Tailwind classes or CSS variables for maintainability."
+                "type": "AESTHETIC_GENERIC_GRADIENT_SUGGESTION",
+                "confidence": "LOW",
+                "category": "DESIGN_CONSISTENCY",
+                "advice": "Ensure gradient aligns with brand design guidelines rather than default AI generation tropes.",
+                "message": f"Common AI-template gradient `{gradient_match.group(0)}` found. Check if brand palette prefers solid or custom surfaces."
             })
 
     return issues
@@ -133,11 +120,10 @@ def scan_content(filepath: str, content: str) -> List[Dict[str, Any]]:
 def scan_directory(target_dir: str) -> Dict[str, Any]:
     all_issues = []
     scanned_files = 0
-    ignored_dirs = {".git", "node_modules", ".next", "dist", "build", "__pycache__", ".venv", "venv", "tests"}
     target_exts = {".jsx", ".tsx", ".html", ".vue", ".svelte", ".astro"}
 
     for root, dirs, files in os.walk(target_dir):
-        dirs[:] = [d for d in dirs if d not in ignored_dirs]
+        dirs[:] = [d for d in dirs if d not in IGNORED_DIRS and not d.startswith(".")]
         for file in files:
             ext = os.path.splitext(file)[1].lower()
             if ext in target_exts:
@@ -153,6 +139,8 @@ def scan_directory(target_dir: str) -> Dict[str, Any]:
 
     return {
         "target_directory": os.path.abspath(target_dir),
+        "scanner": "UI/UX & Accessibility Heuristic Scanner",
+        "guidance": "Heuristic signals for human review. Adapt to your project's custom design system.",
         "files_scanned": scanned_files,
         "total_issues": len(all_issues),
         "issues": all_issues

@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """
-Orchestrator & Health Report Synthesizer
+Heuristic Audit Synthesizer & Quality Index Reporter
 Part of software-craft-skill.
-Executes AST complexity, UI/UX slop, and security scanners, then computes health scores and outputs Markdown.
+Aggregates heuristic findings from static scanners and inspects project structure.
+NOTE: This produces a heuristic quality signal for human review.
+Actual production readiness requires passing real build, typecheck, tests, and security audits.
 """
 
 import os
@@ -10,125 +12,154 @@ import sys
 import json
 from datetime import datetime, timezone
 
-# Ensure UTF-8 output on all platforms (including Windows cp1252 consoles)
+# Ensure UTF-8 output on all platforms
 if sys.stdout.encoding != 'utf-8':
     try:
         sys.stdout.reconfigure(encoding='utf-8')
     except AttributeError:
         pass
 
-# Import sibling scanners
 from ast_complexity import scan_directory as scan_complexity
 from slop_detector import scan_directory as scan_slop
 from security_scanner import scan_directory as scan_security
 
 
-def compute_health_scores(complexity_issues, slop_issues, security_issues):
-    """Computes weighted health scores (0 - 100) based on issue severity."""
-    weights = {"CRITICAL": 20, "HIGH": 10, "MEDIUM": 5, "LOW": 2}
+def inspect_project_artifacts(target_dir: str):
+    """Detects tangible project infrastructure files without guessing."""
+    has_manifest = any(os.path.exists(os.path.join(target_dir, f)) for f in [
+        "package.json", "go.mod", "Cargo.toml", "pyproject.toml", "requirements.txt", "pom.xml"
+    ])
 
-    def calc_deductions(issues):
-        total = 0
-        for issue in issues:
-            sev = issue.get("severity", "MEDIUM")
-            total += weights.get(sev, 5)
-        return total
+    has_ci = os.path.exists(os.path.join(target_dir, ".github", "workflows")) or \
+             os.path.exists(os.path.join(target_dir, ".gitlab-ci.yml"))
 
-    dev_deductions = calc_deductions(complexity_issues) + calc_deductions(security_issues)
-    uiux_deductions = calc_deductions(slop_issues)
-    
-    # Base sub-scores
-    dev_score = max(0, 100 - dev_deductions)
-    uiux_score = max(0, 100 - uiux_deductions)
-    pm_score = 90 if dev_score > 70 and uiux_score > 70 else 75
-    qa_score = 85 if dev_score > 60 else 65
+    has_docker = any(os.path.exists(os.path.join(target_dir, f)) for f in ["Dockerfile", "docker-compose.yml"])
 
-    overall_score = int(0.20 * pm_score + 0.25 * uiux_score + 0.35 * dev_score + 0.20 * qa_score)
+    has_test_suite = False
+    for root, dirs, files in os.walk(target_dir):
+        if any(d in ["tests", "test", "__tests__", "spec"] for d in dirs):
+            has_test_suite = True
+            break
+        if any(f.endswith((".test.js", ".test.ts", ".test.py", "_test.go", ".spec.ts")) for f in files):
+            has_test_suite = True
+            break
 
     return {
-        "overall": overall_score,
-        "pm": pm_score,
-        "uiux": uiux_score,
-        "dev": dev_score,
-        "qa": qa_score
+        "manifest_present": has_manifest,
+        "ci_workflow_present": has_ci,
+        "docker_present": has_docker,
+        "test_suite_detected": has_test_suite
     }
+
+
+def compute_heuristic_index(complexity_issues, slop_issues, security_issues):
+    """Calculates heuristic index based on confidence-weighted deductions."""
+    deductions = 0
+    all_issues = complexity_issues + slop_issues + security_issues
+
+    for issue in all_issues:
+        conf = issue.get("confidence", "MEDIUM")
+        if conf == "HIGH":
+            deductions += 10
+        elif conf == "MEDIUM":
+            deductions += 5
+        else:
+            deductions += 2
+
+    index = max(0, 100 - deductions)
+    return index
 
 
 def generate_markdown_report(target_dir: str, version_tag: str = "v1.0.0") -> str:
     complexity_res = scan_complexity(target_dir)
     slop_res = scan_slop(target_dir)
     security_res = scan_security(target_dir)
+    artifacts = inspect_project_artifacts(target_dir)
 
     c_issues = complexity_res["issues"]
     s_issues = slop_res["issues"]
     sec_issues = security_res["issues"]
 
-    scores = compute_health_scores(c_issues, s_issues, sec_issues)
-    total_issues = len(c_issues) + len(s_issues) + len(sec_issues)
+    index = compute_heuristic_index(c_issues, s_issues, sec_issues)
+    total_signals = len(c_issues) + len(s_issues) + len(sec_issues)
 
-    status_badge = "🟢 PRODUCTION READY" if scores["overall"] >= 85 else ("🟡 NEEDS REVISION" if scores["overall"] >= 65 else "🔴 CRITICAL RISKS DETECTED")
+    status_signal = "🟢 LOW HEURISTIC RISKS" if index >= 85 else ("🟡 ATTENTION REQUIRED" if index >= 60 else "🔴 HIGH HEURISTIC SIGNALS")
 
     now_str = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')
+
     lines = [
-        f"# Software Craft Audit Report: `{version_tag}`",
-        f"> **Generated on:** {now_str} | **Status:** {status_badge}",
+        f"# Software Craft Heuristic Screening: `{version_tag}`",
+        f"> **Generated on:** {now_str} | **Heuristic Signal:** {status_signal}",
         "",
-        "## 1. Executive Health Scorecard",
+        "> [!IMPORTANT]",
+        "> **Notice:** This report is generated by static heuristic pattern scanners. It provides",
+        "> pointers for human review. It is NOT a formal security audit, certified SAST, or proof of production readiness.",
         "",
-        f"| Dimension | Score (0-100) | Status | Key Focus |",
-        f"| :--- | :---: | :--- | :--- |",
-        f"| **Overall Health** | **{scores['overall']} / 100** | {status_badge} | Weighted Product & Engineering Health |",
-        f"| **PM & Architecture** | {scores['pm']} / 100 | {'🟢 Healthy' if scores['pm']>=80 else '🟡 Review'} | Tech Stack Fit & Domain Separation |",
-        f"| **UI/UX & Zero Slop** | {scores['uiux']} / 100 | {'🟢 Healthy' if scores['uiux']>=80 else '🟡 Review'} | WCAG 2.2 AA, Tokens, No AI Slop |",
-        f"| **Dev & ComSci Rigor** | {scores['dev']} / 100 | {'🟢 Healthy' if scores['dev']>=80 else '🔴 Action Req'} | Big-O Complexity & OWASP Security |",
-        f"| **QA & Deploy Standards** | {scores['qa']} / 100 | {'🟢 Healthy' if scores['qa']>=80 else '🟡 Review'} | Edge Cases, Docker & Env Hygiene |",
+        "## 1. Project Infrastructure Verification",
         "",
-        f"**Summary:** Scanned **{complexity_res['files_scanned']}** code files. Discovered **{total_issues}** potential issue(s).",
+        f"| Artifact / Practice | Detected Status | Notes |",
+        f"| :--- | :---: | :--- |",
+        f"| **Package Manifest** | {'✅ Present' if artifacts['manifest_present'] else '⚠️ Missing'} | Recognizable dependency specification |",
+        f"| **Automated Tests** | {'✅ Detected' if artifacts['test_suite_detected'] else '⚠️ Not Found'} | Test directory or `*.test.*` files |",
+        f"| **CI/CD Pipeline** | {'✅ Present' if artifacts['ci_workflow_present'] else 'ℹ️ None'} | GitHub Actions or GitLab CI workflows |",
+        f"| **Container Hygiene** | {'✅ Present' if artifacts['docker_present'] else 'ℹ️ None'} | Dockerfile / Compose configurations |",
+        "",
+        "## 2. Heuristic Quality Index (HQI)",
+        "",
+        f"- **Calculated Index:** **{index} / 100** ({status_signal})",
+        f"- **Files Screened:** {complexity_res['files_scanned']}",
+        f"- **Total Flagged Candidates:** {total_signals}",
         "",
         "---",
         "",
-        "## 2. Key Findings & Detailed Issues",
+        "## 3. Flagged Candidates for Human Review",
         ""
     ]
 
-    # Section for Big-O & Complexity
-    lines.append("### 2.1 Algorithmic & Big-O Bottlenecks (Dev)")
+    # Complexity section
+    lines.append("### 3.1 Algorithmic Complexity Candidates (Dev)")
     if not c_issues:
-        lines.append("- ✅ No severe nested loops or asymptotic bottlenecks detected.")
+        lines.append("- ✅ No obvious nested iteration bottlenecks identified.")
     else:
         for idx, issue in enumerate(c_issues, 1):
-            lines.append(f"{idx}. **[{issue['severity']}] {issue['type']}** at `{issue['file']}:{issue['line']}`")
+            lines.append(f"{idx}. **[{issue['confidence']} Confidence] {issue['type']}** at `{issue['file']}:{issue['line']}`")
             lines.append(f"   - **Estimated Complexity:** `{issue['estimated_complexity']}`")
-            lines.append(f"   - **Details:** {issue['message']}")
+            lines.append(f"   - **Context:** {issue['scale_context']}")
+            lines.append(f"   - **Human Review Note:** {issue['message']}")
     lines.append("")
 
-    # Section for Security
-    lines.append("### 2.2 Security & Vulnerabilities (Dev)")
+    # Security section
+    lines.append("### 3.2 Suspicious Security Patterns (Dev)")
     if not sec_issues:
-        lines.append("- ✅ No hardcoded credentials or obvious SQL/eval injection patterns detected.")
+        lines.append("- ✅ No obvious suspicious credential patterns or raw query concats identified.")
     else:
         for idx, issue in enumerate(sec_issues, 1):
-            lines.append(f"{idx}. **[{issue['severity']}] {issue['type']}** at `{issue['file']}:{issue['line']}`")
-            lines.append(f"   - **Risk:** {issue['message']}")
+            lines.append(f"{idx}. **[{issue['confidence']} Confidence] {issue['type']}** at `{issue['file']}:{issue['line']}`")
+            lines.append(f"   - **Category:** `{issue['category']}`")
+            lines.append(f"   - **Snippet:** `{issue['snippet']}`")
+            lines.append(f"   - **Verification Guidance:** {issue['verification_advice']}")
     lines.append("")
 
-    # Section for UI/UX & Slop
-    lines.append("### 2.3 UI/UX Design, WCAG & AI Slop (UI/UX)")
+    # UI/UX section
+    lines.append("### 3.3 UI/UX Accessibility & Styling Signals (UI/UX)")
     if not s_issues:
-        lines.append("- ✅ Front-end adheres to design tokens with zero detected AI slop.")
+        lines.append("- ✅ No obvious accessibility barriers (missing alt, removed focus rings) found.")
     else:
         for idx, issue in enumerate(s_issues, 1):
-            lines.append(f"{idx}. **[{issue['severity']}] {issue['type']}** at `{issue['file']}:{issue['line']}`")
-            lines.append(f"   - **Violation:** {issue['message']}")
+            lines.append(f"{idx}. **[{issue['confidence']} Confidence] {issue['type']}** at `{issue['file']}:{issue['line']}`")
+            lines.append(f"   - **Category:** `{issue['category']}`")
+            lines.append(f"   - **Advice:** {issue['advice']}")
     lines.append("")
 
-    # Section for Remediation Next Steps
+    # Scope of verification
     lines.extend([
         "---",
-        "## 3. Recommended Remediation & Next Steps",
-        "1. Prioritize all **CRITICAL** and **HIGH** severity issues first.",
-        "2. Review suggested Git diff patches (`.patch`) for inline code corrections.",
-        "3. Re-run this audit before tagging the next Git release version."
+        "## 4. What Was NOT Checked (Human Verification Required)",
+        "The following verifications must be run in your actual environment before shipping:",
+        "- [ ] **Build Compilation:** Verify `npm run build`, `tsc --noEmit`, or `go build` exits with code 0.",
+        "- [ ] **Automated Test Pass:** Run your test suite (`npm test`, `pytest`, `go test ./...`) with real assertions.",
+        "- [ ] **Formal SAST & Dependency CVEs:** Run `npm audit` / `pip-audit` / Snyk / Trivy.",
+        "- [ ] **Production Environment Variables:** Ensure live secrets are injected via secure secret managers."
     ])
 
     return "\n".join(lines)
