@@ -81,7 +81,7 @@ def compute_heuristic_index(complexity_issues, slop_issues, security_issues):
     return index
 
 
-def generate_markdown_report(target_dir: str, version_tag: str = "v1.2.2") -> str:
+def generate_markdown_report(target_dir: str, version_tag: str = "v1.2.3") -> str:
     complexity_res = scan_complexity(target_dir)
     slop_res = scan_slop(target_dir)
     security_res = scan_security(target_dir)

@@ -17,9 +17,10 @@ class TestSecurityScanner(unittest.TestCase):
     def setUp(self):
         self.test_file = "sample_service.py"
         self.multi_secret_file = "sample_multi_secret.py"
+        self.bearer_file = "sample_bearer.py"
 
     def tearDown(self):
-        for f in [self.test_file, self.multi_secret_file]:
+        for f in [self.test_file, self.multi_secret_file, self.bearer_file]:
             if os.path.exists(f):
                 os.remove(f)
 
@@ -46,6 +47,22 @@ class TestSecurityScanner(unittest.TestCase):
 
         issues = scan_file(self.test_file)
         self.assertTrue(any(i["type"] == "SUSPICIOUS_AWS_KEY_PATTERN" for i in issues))
+
+    def test_detects_and_redacts_standalone_bearer_token(self):
+        """Verifies that standalone hardcoded Bearer tokens are flagged and redacted."""
+        raw_jwt = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.t-IDcSemACt8x4iTMCda8Yhe3iZaWbvV5XKSTbuAn0M"
+        code = f'auth_header = "Bearer {raw_jwt}"'
+
+        with open(self.bearer_file, "w", encoding="utf-8") as f:
+            f.write(code)
+
+        issues = scan_file(self.bearer_file)
+        self.assertTrue(any(i["type"] == "SUSPICIOUS_BEARER_TOKEN" for i in issues), "Expected SUSPICIOUS_BEARER_TOKEN to be flagged.")
+
+        for issue in issues:
+            if issue["type"] == "SUSPICIOUS_BEARER_TOKEN":
+                self.assertNotIn(raw_jwt, str(issue), "Raw Bearer token leaked in issue dictionary!")
+                self.assertIn("Bearer [REDACTED_BEARER_TOKEN]", issue["redacted_snippet"])
 
     def test_multiple_secrets_on_same_line_all_redacted(self):
         """Regression test: verifies that ALL credentials on the same line are redacted."""
@@ -76,7 +93,7 @@ class TestSecurityScanner(unittest.TestCase):
         with open(self.multi_secret_file, "w", encoding="utf-8") as f:
             f.write(line)
 
-        report = generate_markdown_report(".", "v1.2.2")
+        report = generate_markdown_report(".", "v1.2.3")
         self.assertNotIn(aws_key, report, "Raw AWS key leaked in generated markdown report!")
         self.assertNotIn(api_token, report, "Raw API token leaked in generated markdown report!")
 

@@ -1,6 +1,6 @@
 # 🛡️ Software Craft Skill: Engineering Squad Router
 
-[![Version: 1.2.2](https://img.shields.io/badge/Version-1.2.2-blue.svg)](https://github.com/Anuphap2/software-craft-skill/releases)
+[![Version: 1.2.3](https://img.shields.io/badge/Version-1.2.3-blue.svg)](https://github.com/Anuphap2/software-craft-skill/releases)
 [![CI Tests](https://github.com/Anuphap2/software-craft-skill/actions/workflows/ci.yml/badge.svg)](https://github.com/Anuphap2/software-craft-skill/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python: 3.10+](https://img.shields.io/badge/Python-3.10%20--%203.12%20(Stdlib)-yellow.svg)](scripts/)
@@ -44,7 +44,7 @@ The skill routes tasks across four distinct operational workflows based on user 
 | :--- | :---: | :--- |
 | **Operating Systems (CI)** | 🔄 CI Configured | Multi-OS workflow configured for Ubuntu, Windows, and macOS. Live runs tracked in [GitHub Actions](https://github.com/Anuphap2/software-craft-skill/actions/workflows/ci.yml). |
 | **Python Runtimes (CI)** | 🔄 CI Configured | Matrix configured for Python 3.10, 3.11, and 3.12. **Zero external pip dependencies.** |
-| **Local Environment** | ✅ Locally Verified | 16/16 unit and regression tests verified passing on Windows 11 with Python 3.12. |
+| **Local Environment** | ✅ Locally Verified | 17/17 unit and regression tests verified passing on Windows 11 with Python 3.12. |
 | **Google Antigravity** | ✅ Locally Tested | Tested locally on Windows with native `~/.gemini/config/skills/` integration. |
 | **Cursor IDE** | ℹ️ Expected to Work | Supported via `.cursor/rules/` directory or project rules configuration. |
 | **Claude Code / Desktop** | ℹ️ Expected to Work | Supported via system prompt rules and local bash tool invocation. |
@@ -80,7 +80,7 @@ software-craft-skill/
 ├── templates/
 │   └── version_audit_report.md    # Standardized markdown report template
 │
-└── tests/                         # Automated unit & regression test suite (16 passing tests)
+└── tests/                         # Automated unit & regression test suite (17 passing tests)
     ├── test_ast_complexity.py
     ├── test_slop_detector.py
     ├── test_security_scanner.py
@@ -103,7 +103,7 @@ Copy `SKILL.md` and the `rules/` folder into your project's `.cursor/rules/` or 
 ### Option 3: Standalone CLI Execution (Zero Setup)
 ```bash
 # Run heuristic screening directly
-python scripts/generate_report.py /path/to/project v1.2.2
+python scripts/generate_report.py /path/to/project v1.2.3
 ```
 
 ---

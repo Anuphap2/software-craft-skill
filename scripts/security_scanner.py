@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Security Pattern Heuristic Scanner (with Multi-Pass Secret Redaction)
+Security Pattern Heuristic Scanner (with Dedicated Bearer Token Detection & Redaction)
 Part of software-craft-skill.
-Detects static suspicious patterns (credentials, raw queries, eval).
+Detects static suspicious patterns (credentials, raw queries, eval, Bearer tokens).
 DISCLAIMER: This is a static regex heuristic scanner, NOT an enterprise SAST tool
 (such as Snyk, Semgrep, SonarQube) or a certified OWASP security audit.
 Findings represent suspicious patterns that require developer context verification.
@@ -48,6 +48,13 @@ PATTERNS = [
         "pattern": re.compile(r'((?:api[_-]?key|secret|auth[_-]?token|jwt[_-]?secret|password|access[_-]?token)\s*[:=]\s*["\'])([a-zA-Z0-9_\-\.]{20,})(["\'])', re.IGNORECASE),
         "default_confidence": "MEDIUM",
         "verification_advice": "Verify if this is an active production credential or a benign development fixture."
+    },
+    {
+        "type": "SUSPICIOUS_BEARER_TOKEN",
+        "category": "CREDENTIALS",
+        "pattern": re.compile(r'\bBearer\s+[a-zA-Z0-9_\-\.]{20,}\b', re.IGNORECASE),
+        "default_confidence": "HIGH",
+        "verification_advice": "Ensure Bearer/JWT tokens are not hardcoded in source files. Inject tokens dynamically at runtime."
     },
     {
         "type": "SUSPICIOUS_RAW_SQL_CONCATENATION",
@@ -107,7 +114,7 @@ def sanitize_all_secrets_in_line(line: str) -> str:
 
     # Pass 4: Redact bearer authorization tokens
     sanitized = re.sub(
-        r'(Bearer\s+)[a-zA-Z0-9_\-\.]{20,}',
+        r'\b(Bearer\s+)[a-zA-Z0-9_\-\.]{20,}\b',
         r'\1[REDACTED_BEARER_TOKEN]',
         sanitized,
         flags=re.IGNORECASE
