@@ -1,6 +1,6 @@
 # 🛡️ Software Craft Skill: Engineering Squad Router
 
-[![Version: 1.2.3](https://img.shields.io/badge/Version-1.2.3-blue.svg)](https://github.com/Anuphap2/software-craft-skill/releases)
+[![Version: 1.2.4](https://img.shields.io/badge/Version-1.2.4-blue.svg)](https://github.com/Anuphap2/software-craft-skill/releases)
 [![CI Tests](https://github.com/Anuphap2/software-craft-skill/actions/workflows/ci.yml/badge.svg)](https://github.com/Anuphap2/software-craft-skill/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python: 3.10+](https://img.shields.io/badge/Python-3.10%20--%203.12%20(Stdlib)-yellow.svg)](scripts/)
@@ -103,14 +103,14 @@ Copy `SKILL.md` and the `rules/` folder into your project's `.cursor/rules/` or 
 ### Option 3: Standalone CLI Execution (Zero Setup)
 ```bash
 # Run heuristic screening directly
-python scripts/generate_report.py /path/to/project v1.2.3
+python scripts/generate_report.py /path/to/project v1.2.4
 ```
 
 ---
 
 ## 🧪 Testing & Validation
 
-### Run Unit & Regression Tests (16 tests)
+### Run Unit & Regression Tests (17 tests)
 ```bash
 python -m unittest discover tests -v
 ```
