@@ -27,6 +27,6 @@ This demo contains intentional synthetic patterns to demonstrate the scanner's h
 You can reproduce the sample audit report at any time by running:
 
 ```bash
-# From repository root:
-python scripts/generate_report.py examples/demo_project v1.2.4 > examples/demo_project/sample_audit_report.md
+# From repository root (uses -o to write UTF-8 directly):
+python scripts/generate_report.py examples/demo_project v1.2.5 -o examples/demo_project/sample_audit_report.md
 ```

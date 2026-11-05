@@ -1,6 +1,6 @@
 # 🛡️ Software Craft Skill: Engineering Squad Router
 
-[![Version: 1.2.4](https://img.shields.io/badge/Version-1.2.4-blue.svg)](https://github.com/Anuphap2/software-craft-skill/releases)
+[![Version: 1.2.5](https://img.shields.io/badge/Version-1.2.5-blue.svg)](https://github.com/Anuphap2/software-craft-skill/releases)
 [![CI Tests](https://github.com/Anuphap2/software-craft-skill/actions/workflows/ci.yml/badge.svg)](https://github.com/Anuphap2/software-craft-skill/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python: 3.10+](https://img.shields.io/badge/Python-3.10%20--%203.12%20(Stdlib)-yellow.svg)](scripts/)
@@ -44,7 +44,7 @@ The skill routes tasks across four distinct operational workflows based on user 
 | :--- | :---: | :--- |
 | **Operating Systems (CI)** | 🔄 CI Configured | Multi-OS workflow configured for Ubuntu, Windows, and macOS. Live runs tracked in [GitHub Actions](https://github.com/Anuphap2/software-craft-skill/actions/workflows/ci.yml). |
 | **Python Runtimes (CI)** | 🔄 CI Configured | Matrix configured for Python 3.10, 3.11, and 3.12. **Zero external pip dependencies.** |
-| **Local Environment** | ✅ Locally Verified | 17/17 unit and regression tests verified passing on Windows 11 with Python 3.12. |
+| **Local Environment** | ✅ Locally Verified | 19/19 unit and regression tests verified passing on Windows 11 with Python 3.12. |
 | **Google Antigravity** | ✅ Locally Tested | Tested locally on Windows with native `~/.gemini/config/skills/` integration. |
 | **Cursor IDE** | ℹ️ Expected to Work | Supported via `.cursor/rules/` directory or project rules configuration. |
 | **Claude Code / Desktop** | ℹ️ Expected to Work | Supported via system prompt rules and local bash tool invocation. |
@@ -86,7 +86,7 @@ software-craft-skill/
 ├── CHANGELOG.md                   # Evidence-based release history
 ├── CONTRIBUTING.md                # Contribution & test guidelines
 │
-└── tests/                         # Automated unit & regression test suite (17 passing tests)
+└── tests/                         # Automated unit & regression test suite (19 passing tests)
     ├── test_ast_complexity.py
     ├── test_slop_detector.py
     ├── test_security_scanner.py
@@ -116,7 +116,7 @@ python scripts/generate_report.py /path/to/project v1.2.4
 
 ## 🧪 Testing & Validation
 
-### Run Unit & Regression Tests (17 tests)
+### Run Unit & Regression Tests (19 tests)
 ```bash
 python -m unittest discover tests -v
 ```
@@ -135,7 +135,7 @@ Explore our [Synthetic Demo Project](examples/demo_project/) to see the scanner 
 * **Pre-Generated Report:** Inspect the [Sample Audit Report](examples/demo_project/sample_audit_report.md) demonstrating automated credential masking and heuristic signals.
 * **Reproduce Command:**
   ```bash
-  python scripts/generate_report.py examples/demo_project v1.2.4
+  python scripts/generate_report.py examples/demo_project v1.2.5 -o examples/demo_project/sample_audit_report.md
   ```
 
 ---

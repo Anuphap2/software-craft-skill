@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Unit tests for slop_detector.py
+Unit tests for slop_detector.py (including multiline JSX)
 Part of software-craft-skill.
 """
 
@@ -18,8 +18,30 @@ class TestSlopDetector(unittest.TestCase):
         issues = scan_content("sample.tsx", content)
         self.assertTrue(any(i["type"] == "ACCESSIBILITY_UNLABELLED_EMOJI_CONTROL" for i in issues))
 
+    def test_detects_unlabelled_emoji_in_multiline_button(self):
+        content = """
+export const UpgradeCard = () => (
+    <div>
+        <button className="px-4 py-2 bg-blue-600 text-white">
+            🚀 Upgrade Account
+        </button>
+    </div>
+);
+"""
+        issues = scan_content("sample.tsx", content)
+        self.assertTrue(any(i["type"] == "ACCESSIBILITY_UNLABELLED_EMOJI_CONTROL" for i in issues))
+
     def test_allows_emoji_with_aria_label(self):
         content = '<button aria-label="Launch product" className="px-4 py-2">🚀</button>'
+        issues = scan_content("sample.tsx", content)
+        self.assertFalse(any(i["type"] == "ACCESSIBILITY_UNLABELLED_EMOJI_CONTROL" for i in issues))
+
+    def test_allows_multiline_button_with_aria_label(self):
+        content = """
+<button aria-label="Upgrade account" className="px-4 py-2">
+    🚀 Upgrade
+</button>
+"""
         issues = scan_content("sample.tsx", content)
         self.assertFalse(any(i["type"] == "ACCESSIBILITY_UNLABELLED_EMOJI_CONTROL" for i in issues))
 

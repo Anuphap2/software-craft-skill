@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-UI/UX Heuristic & Accessibility Scanner
+UI/UX Heuristic & Accessibility Scanner (with Multiline JSX Support)
 Part of software-craft-skill.
 Inspects front-end markup for accessibility risks (WCAG 2.2 AA) and styling consistency.
 NOTE: Design guidelines are advisory. Adapt findings to the project's brand design system.
@@ -23,6 +23,11 @@ EMOJI_PATTERN = re.compile(
     r'[\U0001F300-\U0001F6FF\U0001F900-\U0001F9FF\U0001FA70-\U0001FAFF\U00002702-\U000027B0\U0001F680-\U0001F6C0]'
 )
 
+# Multiline / single-line interactive element block regex: <button ...>...</button> or <a ...>...</a>
+INTERACTIVE_BLOCK_PATTERN = re.compile(
+    r'<(button|a)\b([^>]*)>(.*?)</\1>', re.DOTALL | re.IGNORECASE
+)
+
 # Gradient heuristics (advisory)
 GENERIC_GRADIENT_PATTERN = re.compile(
     r'(from-purple-\d+\s+to-blue-\d+|from-blue-\d+\s+to-purple-\d+|from-violet-\d+\s+to-pink-\d+)'
@@ -42,39 +47,49 @@ IMG_TAG_PATTERN = re.compile(r'<img\b(?![^>]*\balt=)[^>]*>')
 
 def scan_content(filepath: str, content: str) -> List[Dict[str, Any]]:
     issues = []
-    lines = content.splitlines()
 
-    for idx, line in enumerate(lines, 1):
-        stripped = line.strip()
-        if not stripped or stripped.startswith("//") or stripped.startswith("/*"):
-            continue
+    # 1. Block-level Inspection for Interactive Controls (Supports single-line & multiline JSX)
+    for match in INTERACTIVE_BLOCK_PATTERN.finditer(content):
+        tag_name = match.group(1)
+        attrs = match.group(2)
+        body = match.group(3)
+        start_pos = match.start()
+        line_num = content[:start_pos].count('\n') + 1
 
-        # 1. Accessibility: Unlabelled Emoji in Interactive elements
-        if "<button" in stripped or "<a " in stripped:
-            if EMOJI_PATTERN.search(stripped) and "aria-label" not in stripped and "title=" not in stripped:
+        # Check for unlabelled emoji inside control body
+        if EMOJI_PATTERN.search(body):
+            has_aria = "aria-label" in attrs or "title=" in attrs or "aria-labelledby" in attrs
+            if not has_aria:
                 issues.append({
                     "file": filepath,
-                    "line": idx,
+                    "line": line_num,
                     "type": "ACCESSIBILITY_UNLABELLED_EMOJI_CONTROL",
                     "confidence": "HIGH",
                     "category": "WCAG_ACCESSIBILITY",
-                    "advice": "Add `aria-label` or visually-hidden text so screen readers can announce the button's action.",
-                    "message": "Interactive element contains emoji without an accessible label (aria-label/title)."
+                    "advice": f"Add `aria-label` or visually-hidden text to `<{tag_name}>` so screen readers can announce the action.",
+                    "message": f"Interactive element `<{tag_name}>` contains emoji without an accessible label (aria-label/title)."
                 })
 
-        # 2. Accessibility: outline-none without focus-visible
-        if OUTLINE_NONE_PATTERN.search(stripped) and ("<button" in stripped or "<a " in stripped or "<input" in stripped):
+        # Check for outline-none on interactive control
+        if OUTLINE_NONE_PATTERN.search(attrs):
             issues.append({
                 "file": filepath,
-                "line": idx,
+                "line": line_num,
                 "type": "ACCESSIBILITY_REMOVED_FOCUS_OUTLINE",
                 "confidence": "HIGH",
                 "category": "WCAG_ACCESSIBILITY",
                 "advice": "Replace with `focus-visible:ring-2 focus-visible:ring-offset-2` or an equivalent visible focus ring.",
-                "message": "Focus indicator removed via `outline-none` without a `focus-visible:` alternative (WCAG 2.2 AA 2.4.7)."
+                "message": f"Focus indicator removed on `<{tag_name}>` via `outline-none` without a `focus-visible:` alternative (WCAG 2.2 AA 2.4.7)."
             })
 
-        # 3. Accessibility: Missing alt on <img>
+    # 2. Line-by-line Inspection for General Elements (images, arbitrary styling, gradients)
+    lines = content.splitlines()
+    for idx, line in enumerate(lines, 1):
+        stripped = line.strip()
+        if not stripped or stripped.startswith("//") or stripped.startswith("/*") or stripped.startswith("*"):
+            continue
+
+        # Missing alt on <img>
         if IMG_TAG_PATTERN.search(stripped):
             issues.append({
                 "file": filepath,
@@ -86,7 +101,7 @@ def scan_content(filepath: str, content: str) -> List[Dict[str, Any]]:
                 "message": "Image element (`<img>`) is missing an `alt` attribute."
             })
 
-        # 4. Token Consistency: Arbitrary Tailwind values (Advisory)
+        # Token Consistency: Arbitrary Tailwind values (Advisory)
         arbitrary_matches = ARBITRARY_TAILWIND_PATTERN.findall(stripped)
         if arbitrary_matches:
             for prefix, val in arbitrary_matches:
@@ -101,7 +116,7 @@ def scan_content(filepath: str, content: str) -> List[Dict[str, Any]]:
                         "message": f"Arbitrary utility `{prefix}-[{val}]` detected. Review if project design tokens provide a standard alternative."
                     })
 
-        # 5. Visual Consistency: Generic SaaS Gradient (Advisory)
+        # Visual Consistency: Generic SaaS Gradient (Advisory)
         gradient_match = GENERIC_GRADIENT_PATTERN.search(stripped)
         if gradient_match:
             issues.append({
@@ -114,7 +129,16 @@ def scan_content(filepath: str, content: str) -> List[Dict[str, Any]]:
                 "message": f"Common AI-template gradient `{gradient_match.group(0)}` found. Check if brand palette prefers solid or custom surfaces."
             })
 
-    return issues
+    # Deduplicate issues by (file, line, type)
+    seen = set()
+    deduped = []
+    for issue in issues:
+        key = (issue["file"], issue["line"], issue["type"])
+        if key not in seen:
+            seen.add(key)
+            deduped.append(issue)
+
+    return sorted(deduped, key=lambda x: x["line"])
 
 
 def scan_directory(target_dir: str) -> Dict[str, Any]:
@@ -139,7 +163,7 @@ def scan_directory(target_dir: str) -> Dict[str, Any]:
 
     return {
         "target_directory": os.path.abspath(target_dir),
-        "scanner": "UI/UX & Accessibility Heuristic Scanner",
+        "scanner": "UI/UX & Accessibility Heuristic Scanner (Multiline JSX Aware)",
         "guidance": "Heuristic signals for human review. Adapt to your project's custom design system.",
         "files_scanned": scanned_files,
         "total_issues": len(all_issues),

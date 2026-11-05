@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.5] - 2026-11-05
+### Fixed
+- Enhanced `slop_detector.py` to support multiline JSX interactive control blocks (e.g. `<button>\n🚀\n</button>`).
+- Added `-o` / `--output` flag in `generate_report.py` ensuring pure UTF-8 report writing without shell redirection encoding distortion.
+- Regenerated `examples/demo_project/sample_audit_report.md` in clean UTF-8 matching all seeded demo flaws.
+### Added
+- Unit tests for multiline interactive button accessibility validation (bringing test suite to 19 passing tests).
+
 ## [1.2.4] - 2026-11-05
 ### Documentation
 - Aligned test counts across all documentation sections to 17 passing tests (`3581ac1`).
