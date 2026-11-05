@@ -108,8 +108,8 @@ Copy `SKILL.md` and the `rules/` folder into your project's `.cursor/rules/` or 
 
 ### Option 3: Standalone CLI Execution (Zero Setup)
 ```bash
-# Run heuristic screening directly
-python scripts/generate_report.py /path/to/project v1.2.4
+# Run heuristic screening directly (supports -o for direct UTF-8 file output)
+python scripts/generate_report.py /path/to/project v1.2.5 -o audit_report.md
 ```
 
 ---
