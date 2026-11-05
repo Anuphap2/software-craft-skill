@@ -57,7 +57,7 @@ software-craft-skill/
 ### Option 1: Install into Google Antigravity
 Clone or copy this repository into your Antigravity skills directory:
 ```bash
-git clone https://github.com/your-username/software-craft-skill.git ~/.gemini/config/skills/software-craft-skill
+git clone https://github.com/Anuphap2/software-craft-skill.git ~/.gemini/config/skills/software-craft-skill
 ```
 
 ### Option 2: Install into Cursor / Claude Code
