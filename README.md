@@ -1,5 +1,6 @@
 # 🛡️ Software Craft Skill: Virtual Product & Engineering Squad
 
+[![Version: 1.1.0](https://img.shields.io/badge/Version-1.1.0-blue.svg)](https://github.com/Anuphap2/software-craft-skill/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Tests: Passing](https://img.shields.io/badge/Tests-9%2F9%20Passing-emerald.svg)](tests/)
 [![Standard: Zero AI Slop](https://img.shields.io/badge/Standard-Zero%20AI%20Slop-indigo.svg)](rules/uiux-zero-slop-wcag.md)
@@ -10,14 +11,43 @@
 
 ---
 
-## 🌟 Why This Skill?
+## ⚡ Dual-Operating Modes (Build & Audit)
 
-Most AI coding assistants produce superficial code summaries or generic AI wrappers. **Software Craft Skill** replaces shallow reviews with deterministic Computer Science, Human-Computer Interaction (HCI), and Software Engineering inspections:
+Unlike traditional linters or shallow prompt wrappers, **Software Craft Skill** operates in two powerful modes:
 
-* 📐 **PM & Architecture:** Framework suitability evaluation, Clean Architecture boundaries, and SemVer release management.
-* 🎨 **UI/UX & Zero AI Slop:** Strict ban on unstyled emojis, generic purple SaaS gradients, and arbitrary CSS. Enforces WCAG 2.2 AA contrast, 44×44px touch targets, and full interactive states (default, hover, loading/skeleton, empty).
-* ⚡ **Dev ComSci Rigor:** Asymptotic Big-O complexity analysis ($O(1)$ to $O(N^2)$), data structure optimization, and OWASP Top 10 vulnerability detection (SQLi, XSS, Secret Leaks, ReDoS).
-* 🚢 **QA & Pre-Deployment:** Boundary Value Analysis (BVA), strict environment variable validation, Dockerfile hygiene, and `/healthz` liveness checks.
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 🏗️ MODE 1: AUTONOMOUS BUILDER (With Self-Healing Verification Loop)         │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ User Request ──► [PM: Architecture] ──► [UI/UX: Tokens] ──► [Dev: Big-O]    │
+│                       ▲                                           │         │
+│                       │                     [QA: Unit Tests] ◄────┘         │
+│                       │                            │                        │
+│               (Score < 90: Auto-Heal) ◄── [Run Heuristic Scanners]          │
+│                       │                            │                        │
+│                       └────────► [Score >= 90: Certified Delivery]          │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ 🔍 MODE 2: DEEP-AUDIT & REMEDIATION INSPECTOR                               │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ Existing Codebase ──► Scan AST / Slop / Security ──► Versioned Audit Report │
+│                                                  ──► Unified Git Diff Patch │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 1. 🏗️ Mode 1: Autonomous Builder & Self-Healing
+When asked to build a new feature or project from scratch:
+* **PM Phase:** Structures the project following Clean Architecture.
+* **UI/UX Phase:** Enforces semantic design tokens, WCAG 2.2 AA contrast, 44×44px touch targets, and full interactive states (Skeleton, Hover, Empty) — zero AI slop.
+* **Dev Phase:** Selects optimal data structures guaranteeing $O(1)$/$O(N)$ Big-O complexity and parameterized queries protecting against SQL injection and XSS.
+* **QA Phase:** Generates comprehensive unit tests covering Boundary Value Analysis.
+* **Self-Audit Gate:** The agent runs bundled scanners on its own code. If the health score is $< 90$, it **auto-refactors its own code** until meeting production standards before handing it over to you.
+
+### 2. 🔍 Mode 2: Deep-Audit & Remediation
+When asked to review an existing codebase:
+* Scans for algorithmic complexity bottlenecks ($O(N^2)$ nested loops).
+* Detects front-end AI-slop (unstyled emojis, generic purple gradients, arbitrary CSS).
+* Flags OWASP Top 10 security vulnerabilities and hardcoded secrets.
+* Outputs an **Executive Health Scorecard (0-100)** and ready-to-apply **Unified Git Diff Patches**.
 
 ---
 
@@ -25,7 +55,7 @@ Most AI coding assistants produce superficial code summaries or generic AI wrapp
 
 ```
 software-craft-skill/
-├── SKILL.md                       # Core Agent Skill definition & execution workflow
+├── SKILL.md                       # Core Agent Skill definition & Dual-Mode workflows
 ├── README.md                      # Complete documentation & quickstart
 ├── LICENSE                        # MIT License
 │
@@ -55,13 +85,13 @@ software-craft-skill/
 ## 🚀 Quickstart & Installation
 
 ### Option 1: Install into Google Antigravity
-Clone or copy this repository into your Antigravity skills directory:
+Clone directly into your Antigravity skills directory:
 ```bash
 git clone https://github.com/Anuphap2/software-craft-skill.git ~/.gemini/config/skills/software-craft-skill
 ```
 
 ### Option 2: Install into Cursor / Claude Code
-Copy `SKILL.md` and the `rules/` folder into your project's `.cursor/rules/` or add to your system prompt instructions.
+Copy `SKILL.md` and the `rules/` folder into your project's `.cursor/rules/` or add to your agent system prompt instructions.
 
 ### Option 3: Standalone CLI Execution (Zero Setup)
 Run the bundled scanners directly on any project without installing external dependencies:
@@ -76,34 +106,20 @@ python scripts/slop_detector.py /path/to/project
 python scripts/security_scanner.py /path/to/project
 
 # 4. Generate complete Version Audit Report
-python scripts/generate_report.py /path/to/project v1.0.0
+python scripts/generate_report.py /path/to/project v1.1.0
 ```
 
 ---
 
-## 📊 Sample Audit Output
+## 💬 How to Prompt Your AI Agent
 
-When invoked, the skill produces an executive health scorecard and actionable Git diff patches:
+Once installed, talk naturally to your AI Agent:
 
-| Dimension | Score (0-100) | Status | Key Focus Area |
-| :--- | :---: | :---: | :--- |
-| **Overall Health** | **88 / 100** | 🟢 Healthy | Weighted Product & Engineering Health |
-| **1. PM & Architecture** | 90 / 100 | 🟢 Healthy | Stack suitability, Domain separation, SemVer |
-| **2. UI/UX & Zero Slop** | 85 / 100 | 🟢 Healthy | WCAG 2.2 AA, Design tokens, Zero AI Slop |
-| **3. Dev & ComSci Rigor** | 90 / 100 | 🟢 Healthy | Big-O complexity, Data structures, OWASP |
-| **4. QA & Deploy Standards** | 85 / 100 | 🟢 Healthy | Test edge cases, Docker & Env validation |
+#### To Build with Self-Healing Verification:
+> *"Create a user search and notification service using `software-craft-skill`. Ensure it passes the self-healing gate with a Health Score $\ge 90$."*
 
-### Actionable Code Remediations (Unified Diff):
-```diff
---- a/src/services/userService.ts
-+++ b/src/services/userService.ts
-@@ -14,6 +14,8 @@
--  // ❌ O(N * M) - linear search inside map
--  return users.map(u => ({ ...u, profile: profiles.find(p => p.id === u.id) }));
-+  // ✅ O(N + M) - pre-indexed Map lookup
-+  const profileMap = new Map(profiles.map(p => [p.id, p]));
-+  return users.map(u => ({ ...u, profile: profileMap.get(u.id) }));
-```
+#### To Audit an Existing Codebase:
+> *"Audit this repository using `software-craft-skill` across PM, UI/UX, Dev, and QA dimensions. Generate a versioned report and Git diff patches for `v1.0.0`."*
 
 ---
 
