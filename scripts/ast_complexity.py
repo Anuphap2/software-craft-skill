@@ -87,7 +87,7 @@ def strip_comments_and_strings(code: str) -> str:
 
 
 def scan_js_ts_complexity(filepath: str, content: str) -> List[Dict[str, Any]]:
-    """Heuristic scanner for JS/TS with improved brace balancing and token awareness."""
+    """Heuristic scanner for JS/TS with robust scope tracking and sibling loop handling."""
     issues = []
     clean_content = strip_comments_and_strings(content)
     lines = clean_content.splitlines()
@@ -95,33 +95,58 @@ def scan_js_ts_complexity(filepath: str, content: str) -> List[Dict[str, Any]]:
     inner_lookup_pattern = re.compile(r'\.(find|filter|includes|some|every|indexOf)\s*\(')
     loop_pattern = re.compile(r'\b(for\s*\(|while\s*\(|\.forEach\s*\(|\.map\s*\()')
 
-    brace_depth = 0
-    loop_scopes: List[int] = []  # Stores brace depths where loops were initiated
+    current_brace_depth = 0
+    # Store list of active loop scope depths (the brace depth INSIDE the loop)
+    active_loop_depths: List[int] = []
 
     for idx, line in enumerate(lines, 1):
         stripped = line.strip()
         if not stripped:
             continue
 
-        # Check if line initiates a loop
-        if loop_pattern.search(stripped):
-            loop_scopes.append(brace_depth)
-            current_loop_depth = len(loop_scopes)
-            if current_loop_depth >= 2:
+        open_count = stripped.count('{')
+        close_count = stripped.count('}')
+
+        # Check if line initiates a block loop
+        is_loop = bool(loop_pattern.search(stripped))
+        has_open_brace = '{' in stripped
+
+        if is_loop and has_open_brace:
+            # Loop starts and opens a block
+            new_depth = current_brace_depth + open_count
+            active_loop_depths.append(new_depth)
+            nesting_level = len(active_loop_depths)
+
+            if nesting_level >= 2:
                 issues.append({
                     "file": filepath,
                     "line": idx,
                     "type": "HEURISTIC_NESTED_LOOP",
-                    "depth": current_loop_depth,
-                    "estimated_complexity": f"O(N^{current_loop_depth})",
+                    "depth": nesting_level,
+                    "estimated_complexity": f"O(N^{nesting_level})",
                     "confidence": "MEDIUM",
                     "scale_context": "Heuristic match. Verify if input arrays are small (e.g. enum options) or large datasets.",
                     "human_review_required": True,
-                    "message": f"Candidate nested iteration detected (apparent depth {current_loop_depth}). Verify dataset bounds before refactoring."
+                    "message": f"Candidate nested iteration detected (apparent depth {nesting_level}). Verify dataset bounds before refactoring."
+                })
+        elif is_loop and not has_open_brace:
+            # Single-line or chained expression (e.g. items.map(x => x.find(...)))
+            inner_match = inner_lookup_pattern.search(stripped)
+            if inner_match:
+                issues.append({
+                    "file": filepath,
+                    "line": idx,
+                    "type": "HEURISTIC_INNER_LINEAR_SEARCH",
+                    "depth": 2,
+                    "estimated_complexity": "O(N * M)",
+                    "confidence": "MEDIUM",
+                    "scale_context": "If inner collection is small (<20 items), overhead of building a Map exceeds linear scan.",
+                    "human_review_required": True,
+                    "message": f"Inner search `.{inner_match.group(1)}()` detected on same iteration line. Pre-index into Map/Set only if collection is large."
                 })
 
-        # Check for inner linear search within loop
-        if loop_scopes:
+        # Check for inner linear search within any active multi-line loop
+        if active_loop_depths and not is_loop:
             match = inner_lookup_pattern.search(stripped)
             if match:
                 method = match.group(1)
@@ -129,7 +154,7 @@ def scan_js_ts_complexity(filepath: str, content: str) -> List[Dict[str, Any]]:
                     "file": filepath,
                     "line": idx,
                     "type": "HEURISTIC_INNER_LINEAR_SEARCH",
-                    "depth": len(loop_scopes) + 1,
+                    "depth": len(active_loop_depths) + 1,
                     "estimated_complexity": "O(N * M)",
                     "confidence": "MEDIUM",
                     "scale_context": "If inner collection M is small (<20 items), overhead of building a Map exceeds linear scan.",
@@ -137,20 +162,17 @@ def scan_js_ts_complexity(filepath: str, content: str) -> List[Dict[str, Any]]:
                     "message": f"Inner search `.{method}()` detected inside loop. Pre-indexing into Map/Set is only beneficial if collection is large."
                 })
 
-        # Track brace balance
-        open_braces = stripped.count('{')
-        close_braces = stripped.count('}')
-        brace_depth += open_braces - close_braces
+        # Update brace depth
+        current_brace_depth += open_count - close_count
 
-        # Remove exited loops
-        while loop_scopes and brace_depth <= loop_scopes[-1]:
-            loop_scopes.pop()
+        # Pop any loop whose scope has closed
+        while active_loop_depths and current_brace_depth < active_loop_depths[-1]:
+            active_loop_depths.pop()
 
     return issues
 
 
 def scan_file(filepath: str) -> List[Dict[str, Any]]:
-    # Skip generated and vendor files
     basename = os.path.basename(filepath)
     if any(basename.endswith(ext) for ext in IGNORED_FILE_EXTENSIONS):
         return []

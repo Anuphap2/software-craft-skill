@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """
-Security Pattern Heuristic Scanner
+Security Pattern Heuristic Scanner (with Secret Redaction)
 Part of software-craft-skill.
 Detects static suspicious patterns (credentials, raw queries, eval).
 DISCLAIMER: This is a static regex heuristic scanner, NOT an enterprise SAST tool
 (such as Snyk, Semgrep, SonarQube) or a certified OWASP security audit.
 Findings represent suspicious patterns that require developer context verification.
+All discovered secret tokens are strictly redacted to prevent credential leakage in reports.
 """
 
 import os
@@ -39,14 +40,14 @@ PATTERNS = [
         "category": "CREDENTIALS",
         "pattern": re.compile(r'-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----'),
         "default_confidence": "HIGH",
-        "verification_advice": "Ensure private keys are never stored in version control. Use a secret manager."
+        "verification_advice": "Ensure private keys are never stored in version control. Use a secure secret manager."
     },
     {
         "type": "SUSPICIOUS_ASSIGNED_SECRET",
         "category": "CREDENTIALS",
-        "pattern": re.compile(r'(?:api[_-]?key|secret|auth[_-]?token|jwt[_-]?secret)\s*[:=]\s*["\']([a-zA-Z0-9_\-\.]{20,})["\']', re.IGNORECASE),
+        "pattern": re.compile(r'((?:api[_-]?key|secret|auth[_-]?token|jwt[_-]?secret)\s*[:=]\s*["\'])([a-zA-Z0-9_\-\.]{20,})(["\'])', re.IGNORECASE),
         "default_confidence": "MEDIUM",
-        "verification_advice": "Verify if this is a live production credential or a benign development fixture."
+        "verification_advice": "Verify if this is an active production credential or a benign development fixture."
     },
     {
         "type": "SUSPICIOUS_RAW_SQL_CONCATENATION",
@@ -79,6 +80,23 @@ PATTERNS = [
 ]
 
 
+def redact_line(line: str, pattern_type: str) -> str:
+    """Masks secret values from snippet to prevent leaking credentials in reports."""
+    redacted = line.strip()
+    if pattern_type == "SUSPICIOUS_AWS_KEY_PATTERN":
+        redacted = re.sub(r'AKIA[0-9A-Z]{16}', 'AKIA[REDACTED_AWS_KEY]', redacted)
+    elif pattern_type == "SUSPICIOUS_ASSIGNED_SECRET":
+        redacted = re.sub(
+            r'((?:api[_-]?key|secret|auth[_-]?token|jwt[_-]?secret)\s*[:=]\s*["\'])([^"\']+)(["\'])',
+            r'\1[REDACTED_SECRET]\3',
+            redacted,
+            flags=re.IGNORECASE
+        )
+    elif pattern_type == "SUSPICIOUS_PRIVATE_KEY_HEADER":
+        redacted = "-----BEGIN [REDACTED_PRIVATE_KEY]-----"
+    return redacted[:100]
+
+
 def scan_file(filepath: str) -> List[Dict[str, Any]]:
     # Skip test files and mock fixtures
     basename = os.path.basename(filepath).lower()
@@ -107,10 +125,11 @@ def scan_file(filepath: str) -> List[Dict[str, Any]]:
                         continue
 
                     confidence = check["default_confidence"]
-                    # Context relaxation: if dangerouslySetInnerHTML has DOMPurify in the line or file, mark LOW confidence
                     if check["type"] == "SUSPICIOUS_UNESCAPED_HTML":
                         if "sanitize" in stripped.lower() or file_has_purify:
                             confidence = "LOW"
+
+                    redacted_snippet = redact_line(stripped, check["type"])
 
                     issues.append({
                         "file": filepath,
@@ -120,7 +139,7 @@ def scan_file(filepath: str) -> List[Dict[str, Any]]:
                         "confidence": confidence,
                         "classification": "SUSPICIOUS_PATTERN_HEURISTIC",
                         "verification_advice": check["verification_advice"],
-                        "snippet": stripped[:120],
+                        "redacted_snippet": redacted_snippet,
                         "message": f"Suspicious pattern matched: {check['type']}. (Confidence: {confidence})"
                     })
     except Exception as e:
@@ -147,7 +166,7 @@ def scan_directory(target_dir: str) -> Dict[str, Any]:
     return {
         "target_directory": os.path.abspath(target_dir),
         "scanner": "Static Security Pattern Matcher (Regex Heuristic)",
-        "disclaimer": "Heuristic screening only. Not a formal SAST or OWASP certification.",
+        "disclaimer": "Heuristic screening only. Not a formal SAST or OWASP certification. All secrets are redacted.",
         "files_scanned": scanned_files,
         "total_issues": len(all_issues),
         "issues": all_issues

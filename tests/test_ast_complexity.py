@@ -50,6 +50,34 @@ const enrich = (users, profiles) => {
         issues = scan_file(self.test_js_file)
         self.assertTrue(any(i["type"] == "HEURISTIC_INNER_LINEAR_SEARCH" for i in issues))
 
+    def test_sibling_loops_not_flagged_as_nested(self):
+        code = """
+function processData(itemsA, itemsB) {
+    for (let i = 0; i < itemsA.length; i++) {
+        console.log(itemsA[i]);
+    }
+    for (let j = 0; j < itemsB.length; j++) {
+        console.log(itemsB[j]);
+    }
+}
+"""
+        with open(self.test_js_file, "w", encoding="utf-8") as f:
+            f.write(code)
+
+        issues = scan_file(self.test_js_file)
+        # Sibling loops must NOT be flagged as nested loop
+        self.assertFalse(any(i["type"] == "HEURISTIC_NESTED_LOOP" for i in issues))
+
+    def test_implicit_arrow_inner_search(self):
+        code = """
+const ids = users.map(u => profiles.find(p => p.id === u.id));
+"""
+        with open(self.test_js_file, "w", encoding="utf-8") as f:
+            f.write(code)
+
+        issues = scan_file(self.test_js_file)
+        self.assertTrue(any(i["type"] == "HEURISTIC_INNER_LINEAR_SEARCH" for i in issues))
+
 
 if __name__ == "__main__":
     unittest.main()

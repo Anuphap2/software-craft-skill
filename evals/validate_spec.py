@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """
-Agent Behavioral Evaluation Runner
+Agent Scenario Specification Validator
 Part of software-craft-skill.
-Validates the benchmark evaluation scenarios and verifies test trace compliance.
+Validates the structural integrity and schema of the agent benchmark scenarios.
+NOTE: This script validates scenario schema definitions and expected behavior constraints.
+It does NOT execute live LLM prompts or evaluate agent conversation traces.
 """
 
 import os
@@ -37,7 +39,7 @@ def validate_scenario_schema(scenario: Dict[str, Any]) -> List[str]:
     return errors
 
 
-def run_benchmark_verification() -> Dict[str, Any]:
+def validate_benchmark_spec() -> Dict[str, Any]:
     scenarios = load_scenarios()
     all_errors = []
     for sc in scenarios:
@@ -46,6 +48,8 @@ def run_benchmark_verification() -> Dict[str, Any]:
 
     return {
         "status": "PASS" if not all_errors else "FAIL",
+        "validator": "Scenario Schema Validator (Structural validation)",
+        "notice": "Validates benchmark scenario schema. Does not execute live agent prompts.",
         "total_scenarios": len(scenarios),
         "errors": all_errors,
         "scenarios": [s["id"] for s in scenarios]
@@ -53,7 +57,7 @@ def run_benchmark_verification() -> Dict[str, Any]:
 
 
 if __name__ == "__main__":
-    res = run_benchmark_verification()
+    res = validate_benchmark_spec()
     print(json.dumps(res, indent=2))
     if res["status"] != "PASS":
         sys.exit(1)

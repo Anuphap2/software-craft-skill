@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Unit test for Agent Behavioral Evaluation Scenarios
+Unit test for Agent Scenario Specification Validator
 Part of software-craft-skill.
 """
 
@@ -9,12 +9,12 @@ import os
 import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "evals")))
-from runner import run_benchmark_verification, load_scenarios
+from validate_spec import validate_benchmark_spec, load_scenarios
 
 
-class TestAgentEvals(unittest.TestCase):
+class TestScenarioSpecification(unittest.TestCase):
     def test_eval_scenarios_schema_and_integrity(self):
-        result = run_benchmark_verification()
+        result = validate_benchmark_spec()
         self.assertEqual(result["status"], "PASS", f"Scenario validation errors: {result['errors']}")
         self.assertGreaterEqual(result["total_scenarios"], 4)
 
