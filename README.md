@@ -77,8 +77,14 @@ software-craft-skill/
 │   ├── eval_scenarios.json        # Standardized benchmark scenario definitions
 │   └── validate_spec.py           # Scenario specification schema validator
 │
+├── examples/                      # Reproducible synthetic demonstration
+│   └── demo_project/              # Seeded mock project & sample audit report
+│
 ├── templates/
 │   └── version_audit_report.md    # Standardized markdown report template
+│
+├── CHANGELOG.md                   # Evidence-based release history
+├── CONTRIBUTING.md                # Contribution & test guidelines
 │
 └── tests/                         # Automated unit & regression test suite (17 passing tests)
     ├── test_ast_complexity.py
@@ -119,6 +125,18 @@ python -m unittest discover tests -v
 ```bash
 python evals/validate_spec.py
 ```
+
+---
+
+## 📁 Reproducible Demo Example
+
+Explore our [Synthetic Demo Project](examples/demo_project/) to see the scanner in action on deliberately flawed mock code:
+* **Seeded Flaws:** Contains intentional candidate $O(N^2)$ nested loops, raw SQL concatenation, and unlabelled emoji buttons using 100% synthetic fake data.
+* **Pre-Generated Report:** Inspect the [Sample Audit Report](examples/demo_project/sample_audit_report.md) demonstrating automated credential masking and heuristic signals.
+* **Reproduce Command:**
+  ```bash
+  python scripts/generate_report.py examples/demo_project v1.2.4
+  ```
 
 ---
 
