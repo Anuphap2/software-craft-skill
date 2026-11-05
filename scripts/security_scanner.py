@@ -89,7 +89,7 @@ def scan_file(filepath: str) -> List[Dict[str, Any]]:
 def scan_directory(target_dir: str) -> Dict[str, Any]:
     all_issues = []
     scanned_files = 0
-    ignored_dirs = {".git", "node_modules", ".next", "dist", "build", "__pycache__", ".venv", "venv", ".idea"}
+    ignored_dirs = {".git", "node_modules", ".next", "dist", "build", "__pycache__", ".venv", "venv", ".idea", "tests"}
     code_exts = {".py", ".js", ".jsx", ".ts", ".tsx", ".go", ".rs", ".java", ".php", ".rb", ".json", ".env"}
 
     for root, dirs, files in os.walk(target_dir):

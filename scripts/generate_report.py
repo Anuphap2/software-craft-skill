@@ -8,7 +8,14 @@ Executes AST complexity, UI/UX slop, and security scanners, then computes health
 import os
 import sys
 import json
-from datetime import datetime
+from datetime import datetime, timezone
+
+# Ensure UTF-8 output on all platforms (including Windows cp1252 consoles)
+if sys.stdout.encoding != 'utf-8':
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+    except AttributeError:
+        pass
 
 # Import sibling scanners
 from ast_complexity import scan_directory as scan_complexity
@@ -61,9 +68,10 @@ def generate_markdown_report(target_dir: str, version_tag: str = "v1.0.0") -> st
 
     status_badge = "🟢 PRODUCTION READY" if scores["overall"] >= 85 else ("🟡 NEEDS REVISION" if scores["overall"] >= 65 else "🔴 CRITICAL RISKS DETECTED")
 
+    now_str = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')
     lines = [
         f"# Software Craft Audit Report: `{version_tag}`",
-        f"> **Generated on:** {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')} | **Status:** {status_badge}",
+        f"> **Generated on:** {now_str} | **Status:** {status_badge}",
         "",
         "## 1. Executive Health Scorecard",
         "",

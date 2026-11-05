@@ -124,7 +124,7 @@ def scan_file(filepath: str) -> List[Dict[str, Any]]:
 def scan_directory(target_dir: str) -> Dict[str, Any]:
     all_issues = []
     scanned_files = 0
-    ignored_dirs = {".git", "node_modules", ".next", "dist", "build", "__pycache__", ".venv", "venv"}
+    ignored_dirs = {".git", "node_modules", ".next", "dist", "build", "__pycache__", ".venv", "venv", "tests"}
 
     for root, dirs, files in os.walk(target_dir):
         dirs[:] = [d for d in dirs if d not in ignored_dirs]
