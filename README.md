@@ -1,27 +1,37 @@
 # 🛡️ Software Craft Skill: Engineering Squad Router
 
-[![Version: 1.2.5](https://img.shields.io/badge/Version-1.2.5-blue.svg)](https://github.com/Anuphap2/software-craft-skill/releases)
+[![Version: 1.3.0](https://img.shields.io/badge/Version-1.3.0-blue.svg)](https://github.com/Anuphap2/software-craft-skill/releases)
 [![CI Tests](https://github.com/Anuphap2/software-craft-skill/actions/workflows/ci.yml/badge.svg)](https://github.com/Anuphap2/software-craft-skill/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Python: 3.10+](https://img.shields.io/badge/Python-3.10%20--%203.12%20(Stdlib)-yellow.svg)](scripts/)
+[![Python: 3.10+](https://img.shields.io/badge/Python-3.10%20--%203.13%20(Stdlib)-yellow.svg)](scripts/)
 [![Standard: WCAG 2.2 AA](https://img.shields.io/badge/Standard-WCAG%202.2%20AA%20Aligned-indigo.svg)](rules/uiux-zero-slop-wcag.md)
 
 > **Equip your AI Agent (Antigravity, Cursor, Claude Code, Copilot) with pragmatic, disciplined engineering workflows:**  
-> **PM** (Scope & Architecture) • **UI/UX** (WCAG 2.2 AA & Usability) • **Dev** (Big-O Heuristics & Multi-Pass Secret Redaction) • **QA** (Real Verification & Pre-Deploy Checks)
+> **PM** (Scope & Architecture) • **UI/UX** (WCAG 2.2 AA & Usability) • **Dev** (Big-O Heuristics & Code Coupling Graph) • **QA** (Real Evidence Gate & Pre-Deploy Checks)
 
 ---
 
 ## 🧭 Why Software Craft Skill?
 
-Most AI coding assistants either provide superficial code summaries or claim impossible "100% bug-free guarantees" based on simple regex wrappers. 
+Most AI coding assistants either provide superficial code summaries or claim impossible "100% bug-free guarantees" based on simple regex wrappers. Worse, autonomous agents often suffer from **4 fatal real-world failure modes**:
 
-**Software Craft Skill** replaces hype with **pragmatic engineering discipline**:
+```
+ ┌───────────────────────────────────────┬────────────────────────────────────────┐
+ │ Common Agent Failure Modes            │ Software Craft Skill Solution (v1.3.0) │
+ ├───────────────────────────────────────┼────────────────────────────────────────┤
+ │ 1. Over-imagining / Scope Drift       │ Execution Manifest & Strict File Locks │
+ │ 2. Searching Files Too Long           │ Code Graph & Coupling Dependency Map   │
+ │ 3. Broken Ad-Hoc Scripts              │ Zero-Dependency Deterministic Tools    │
+ │ 4. Checklist Illusion (Checked ≠ Done)│ Acceptance Criteria & Evidence Gate    │
+ └───────────────────────────────────────┴────────────────────────────────────────┘
+```
+
 1. **Multi-Pass Credential Redaction:** All detected API keys, passwords, private keys, and tokens are strictly sanitized in reports (`AKIA[REDACTED_AWS_KEY]`, `[REDACTED_SECRET]`). Multiple secrets on the same line are all redacted simultaneously, preventing credential leaks.
 2. **Context-Aware Heuristics:** Identifies Big-O bottlenecks and security patterns as *candidates for human review*, considering actual data scale ($N$), handling sibling loops properly, and respecting project boundaries.
 3. **Dependency-Safe Artifact Inspection:** Scans only project-level files, actively pruning `node_modules`, `vendor`, and `.venv` from artifact detection.
 4. **Strict Scope Containment:** Enforces surgical bug fixes that do not rewrite unrelated files or force unrequested library migrations.
 5. **Honest Verification:** Reports actual test and build outcomes based on executed commands, never fabricating false pass scores when test runners are absent.
-6. **Progressive Disclosure:** Keeps the main skill router concise, loading deep-tech criteria from `rules/` on-demand (aligned with Microsoft Agent Framework & Anthropic Agent Skills best practices).
+6. **Progressive Disclosure:** Keeps the main skill router concise (<100 lines), loading deep-tech criteria from `rules/` on-demand (aligned with Microsoft Agent Framework & Anthropic Agent Skills best practices).
 
 ---
 
@@ -31,10 +41,10 @@ The skill routes tasks across four distinct operational workflows based on user 
 
 | Workflow | Goal | Execution Characteristics |
 | :--- | :--- | :--- |
-| **1. Feature Builder** | Incremental feature scaffolding | Respects repo conventions, generates accessible UI states, runs heuristic checks, and verifies real tests if present. |
-| **2. Code Review & Audit** | Read-only inspection of PRs or code | Strictly non-destructive; rates findings with confidence levels (`HIGH`/`MEDIUM`/`LOW`) and explicitly lists what was not checked. |
-| **3. Surgical Bug Fix** | Precise defect remediation | Targets only the root cause; preserves surrounding code and formatting; avoids sweeping rewrites. |
-| **4. Pre-Release Diff** | Version release readiness | Compares current changes against a Git baseline (`base_tag..HEAD`); validates env hygiene and deployment checklists. |
+| **1. Feature Builder** | Incremental feature scaffolding | Declares Execution Manifest, maps couplings via `code_graph.py`, respects repo conventions, and validates Acceptance Criteria with real evidence. |
+| **2. Code Review & Audit** | Read-only inspection of PRs or code | Strictly non-destructive; runs coupling and heuristic scanners; rates findings with confidence levels (`HIGH`/`MEDIUM`/`LOW`). |
+| **3. Surgical Bug Fix** | Precise defect remediation | Checks dependent files first, modifies only minimal necessary lines in target files, and provides regression test execution output. |
+| **4. Pre-Release Diff** | Version release readiness | Compares current changes against a Git baseline (`base_tag..HEAD`); executes automated Acceptance Criteria evidence gate. |
 
 ---
 
@@ -44,7 +54,7 @@ The skill routes tasks across four distinct operational workflows based on user 
 | :--- | :---: | :--- |
 | **Operating Systems (CI)** | 🔄 CI Configured | Multi-OS workflow configured for Ubuntu, Windows, and macOS. Live runs tracked in [GitHub Actions](https://github.com/Anuphap2/software-craft-skill/actions/workflows/ci.yml). |
 | **Python Runtimes (CI)** | 🔄 CI Configured | Matrix configured for Python 3.10, 3.11, and 3.12. **Zero external pip dependencies.** |
-| **Local Environment** | ✅ Locally Verified | 19/19 unit and regression tests verified passing on Windows 11 with Python 3.12. |
+| **Local Environment** | ✅ Locally Verified | 29/29 unit and regression tests verified passing on Windows 11 with Python 3.12. |
 | **Google Antigravity** | ✅ Locally Tested | Tested locally on Windows with native `~/.gemini/config/skills/` integration. |
 | **Cursor IDE** | ℹ️ Expected to Work | Supported via `.cursor/rules/` directory or project rules configuration. |
 | **Claude Code / Desktop** | ℹ️ Expected to Work | Supported via system prompt rules and local bash tool invocation. |
@@ -57,23 +67,25 @@ The skill routes tasks across four distinct operational workflows based on user 
 software-craft-skill/
 ├── .github/workflows/
 │   └── ci.yml                     # Multi-OS & Multi-Python CI test matrix
-├── SKILL.md                       # Main Agent Skill router & workflow definitions
+├── SKILL.md                       # Main Agent Skill router & workflow definitions (<100 lines)
 ├── README.md                      # Comprehensive documentation
 ├── LICENSE                        # MIT License
 │
 ├── rules/                         # Progressive deep-tech guidelines
-│   ├── pm-architecture.md         # Scope control, framework fit, SemVer
+│   ├── pm-architecture.md         # Scope Lock & Execution Manifest Protocol
 │   ├── uiux-zero-slop-wcag.md     # WCAG 2.2 AA accessibility & design system respect
-│   ├── dev-big-o-security.md      # Big-O heuristics & suspicious security patterns
-│   └── qa-deploy-standards.md     # Respecting project test tooling & pre-deploy checks
+│   ├── dev-big-o-security.md      # Big-O heuristics & Code Coupling Analysis
+│   └── qa-deploy-standards.md     # Acceptance Criteria & Evidence Verification Gate
 │
-├── scripts/                       # Zero-dependency heuristic scanners
+├── scripts/                       # Zero-dependency deterministic tooling (Stdlib only)
+│   ├── code_graph.py              # Lightweight Dependency & Coupling Graph Mapper
+│   ├── evidence_checker.py        # Acceptance Criteria & Evidence Verification Gate
 │   ├── ast_complexity.py          # Loop nesting & Big-O candidate scanner (sibling-loop aware)
 │   ├── slop_detector.py           # WCAG accessibility & styling consistency scanner
 │   ├── security_scanner.py        # Multi-pass secret redaction & suspicious pattern scanner
 │   └── generate_report.py         # Heuristic Quality Index (HQI) report generator
 │
-├── evals/                         # Agent Scenario Specifications
+├── evals/                         # Agent Scenario Specifications (7 Scenarios)
 │   ├── eval_scenarios.json        # Standardized benchmark scenario definitions
 │   └── validate_spec.py           # Scenario specification schema validator
 │
@@ -86,7 +98,9 @@ software-craft-skill/
 ├── CHANGELOG.md                   # Evidence-based release history
 ├── CONTRIBUTING.md                # Contribution & test guidelines
 │
-└── tests/                         # Automated unit & regression test suite (19 passing tests)
+└── tests/                         # Automated unit & regression test suite (29 passing tests)
+    ├── test_code_graph.py
+    ├── test_evidence_checker.py
     ├── test_ast_complexity.py
     ├── test_slop_detector.py
     ├── test_security_scanner.py
@@ -108,15 +122,21 @@ Copy `SKILL.md` and the `rules/` folder into your project's `.cursor/rules/` or 
 
 ### Option 3: Standalone CLI Execution (Zero Setup)
 ```bash
-# Run heuristic screening directly (supports -o for direct UTF-8 file output)
-python scripts/generate_report.py /path/to/project v1.2.5 -o audit_report.md
+# 1. Inspect codebase dependency graph & couplings:
+python scripts/code_graph.py /path/to/project
+
+# 2. Run heuristic screening directly (supports -o for direct UTF-8 file output):
+python scripts/generate_report.py /path/to/project v1.3.0 -o audit_report.md
+
+# 3. Verify acceptance criteria with command execution evidence:
+python scripts/evidence_checker.py /path/to/criteria.json --run
 ```
 
 ---
 
 ## 🧪 Testing & Validation
 
-### Run Unit & Regression Tests (19 tests)
+### Run Unit & Regression Tests (29 tests)
 ```bash
 python -m unittest discover tests -v
 ```
@@ -135,7 +155,7 @@ Explore our [Synthetic Demo Project](examples/demo_project/) to see the scanner 
 * **Pre-Generated Report:** Inspect the [Sample Audit Report](examples/demo_project/sample_audit_report.md) demonstrating automated credential masking and heuristic signals.
 * **Reproduce Command:**
   ```bash
-  python scripts/generate_report.py examples/demo_project v1.2.5 -o examples/demo_project/sample_audit_report.md
+  python scripts/generate_report.py examples/demo_project v1.3.0 -o examples/demo_project/sample_audit_report.md
   ```
 
 ---
@@ -143,20 +163,15 @@ Explore our [Synthetic Demo Project](examples/demo_project/) to see the scanner 
 ## ⚠️ Scope & Verification Boundaries
 
 **What this skill DOES:**
-* Identifies high-risk algorithmic candidates for human engineering review.
+* Enforces execution manifests and file boundaries to prevent agent scope drift.
+* Rapidly maps dependencies and couplings via `code_graph.py` without blind directory crawling.
+* Guarantees zero third-party dependencies across all tools to eliminate runtime script breakage.
+* Gates completion behind concrete command evidence (`evidence_checker.py`), eliminating the checklist illusion.
 * Strictly redacts multiple credentials on the same line to prevent accidental secret leakage.
-* Flags accessible labeling and focus-visible omissions under WCAG 2.2 AA.
-* Screens code for suspicious security patterns (unparameterized SQL strings, unescaped HTML, exposed key formats).
-* Guides agents toward surgical changes, dependency pruning, and honest test reporting.
+* Identifies high-risk algorithmic candidates and accessible labeling omissions under WCAG 2.2 AA.
 
-**What this skill DOES NOT replace:**
-* Formal Static Application Security Testing (SAST) such as Snyk, Semgrep, or SonarQube.
-* Real test execution (`npm test`, `pytest`, `go test`).
-* Build compilation checks (`tsc --noEmit`, `npm run build`).
-* Penetration testing or dynamic production load testing.
-* Live agent trace evaluation (the `evals/` suite currently validates scenario specifications).
-
----
-
-## 📄 License
-Released under the [MIT License](LICENSE).
+**What this skill DOES NOT do:**
+* It does NOT provide certified static application security testing (SAST); use SonarQube, Semgrep, or Snyk.
+* It does NOT guarantee zero false positives in regex-based heuristic checks.
+* It does NOT certify WCAG 2.2 AA compliance; formal manual and screen-reader auditing is still required.
+* It does NOT replace real end-to-end integration or unit test suites.

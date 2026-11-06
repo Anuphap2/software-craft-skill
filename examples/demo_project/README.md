@@ -22,11 +22,17 @@ This demo contains intentional synthetic patterns to demonstrate the scanner's h
 
 ---
 
-## 🔄 How to Reproduce This Report
+## 🔄 How to Reproduce Reports & Evidence
 
-You can reproduce the sample audit report at any time by running:
+You can reproduce the sample audit report and verify acceptance criteria at any time:
 
 ```bash
-# From repository root (uses -o to write UTF-8 directly):
-python scripts/generate_report.py examples/demo_project v1.2.5 -o examples/demo_project/sample_audit_report.md
+# 1. Inspect dependency and coupling relationships:
+python scripts/code_graph.py examples/demo_project
+
+# 2. Reproduce the sample audit report (writes UTF-8 directly):
+python scripts/generate_report.py examples/demo_project v1.3.0 -o examples/demo_project/sample_audit_report.md
+
+# 3. Verify acceptance criteria with execution evidence:
+python scripts/evidence_checker.py examples/demo_project/sample_acceptance_criteria.json --run
 ```

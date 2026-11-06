@@ -1,16 +1,27 @@
 # Dev Dimension: Complexity Heuristics & Security Screening
 
 ## 1. Objective
-Provide disciplined guidelines for identifying algorithmic bottlenecks (Big-O analysis) and suspicious security patterns (OWASP Top 10 screening).
+Provide disciplined guidelines for identifying algorithmic bottlenecks (Big-O analysis), suspicious security patterns (OWASP Top 10 screening), and module coupling dependencies.
 Always evaluate findings in the context of real production data volume and operational boundaries.
 
 ---
 
-## 2. Algorithmic Complexity (Big-O Asymptotic Analysis)
+## 2. Module Coupling & Dependency Mapping
+
+Before modifying or refactoring shared code, understand its incoming and outgoing dependencies:
+* **Coupling Map First:** Run `python scripts/code_graph.py <project_directory> --file <target_file>` to detect:
+  - Downstream dependents: Files that import the target file and could break if signatures change.
+  - Upstream dependencies: Modules imported by the target file.
+  - Circular dependencies: Mutual imports that can cause runtime initialization failures.
+* **Avoid Duplicate Implementation:** If a shared utility or helper already exists in another module, import it instead of writing a duplicate local implementation.
+
+---
+
+## 3. Algorithmic Complexity (Big-O Asymptotic Analysis)
 
 Static loop nesting analysis identifies *candidates* for optimization, but real-world engineering requires evaluating the actual data scale ($N$ and $M$):
 
-### 2.1 Contextual Complexity Evaluation
+### 3.1 Contextual Complexity Evaluation
 * **Small / Bounded Datasets ($N \le 20$):**
   - Iterating over small fixed collections (e.g. days of the week, 3 user roles, 5 status tabs) with nested loops has negligible CPU impact.
   - Converting small arrays to `Map` or `Set` may introduce unnecessary allocation overhead.
@@ -19,13 +30,13 @@ Static loop nesting analysis identifies *candidates* for optimization, but real-
   - Nested loops ($O(N^2)$) or inner array searches (`.find()`, `.filter()`, `.includes()`) over unbounded database results or user collections create severe CPU spikes.
   - **Remediation:** Pre-index records into a `Map` or `Set` ($O(N + M)$), or use database indexed queries.
 
-### 2.2 Database & I/O Complexity
+### 3.2 Database & I/O Complexity
 * **N+1 Query Detection:** Watch for ORM queries executing inside loops. Use eager loading (`include`, `select_related`) or batched IDs (`WHERE id IN (...)`).
 * **Memory Exhaustion:** Stream large datasets (chunking, cursors, generators) instead of loading entire tables or multi-gigabyte files into RAM.
 
 ---
 
-## 3. Security Screening (Pattern Matching vs. Confirmed Vulnerability)
+## 4. Security Screening (Pattern Matching vs. Confirmed Vulnerability)
 
 Static pattern matching flags suspicious syntax for review. Do not confuse a regex match with an exploitable vulnerability:
 
@@ -39,7 +50,7 @@ Static pattern matching flags suspicious syntax for review. Do not confuse a reg
 
 ---
 
-## 4. Verification Evidence Standards
+## 5. Verification Evidence Standards
 * Static heuristic matches MUST be labeled with **Confidence Levels** (`HIGH`, `MEDIUM`, `LOW`).
 * Suggest formal verification tools where appropriate:
   - Dependency vulnerabilities: `npm audit`, `pip-audit`, `cargo audit`.

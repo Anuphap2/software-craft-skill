@@ -8,6 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.3.0] - 2026-11-07
+### Added
+- **Dependency & Coupling Graph Mapper (`scripts/code_graph.py`):** Fast, zero-dependency code relationship analyzer for Python, JS, and TS that eliminates agent search loops and duplicate code creation.
+- **Acceptance Criteria Evidence Gate (`scripts/evidence_checker.py`):** Automated verification tool that enforces concrete execution proof (command exit codes, test outputs) and classifies criteria into `ACCEPT`, `VERIFY_MORE`, or `REVISE`, eliminating the checklist illusion.
+- **Two New Agent Benchmark Scenarios:** Added `scenario_scope_manifest_lock` and `scenario_evidence_backed_completion` to `evals/eval_scenarios.json` (bringing benchmark to 7 scenarios).
+- **Comprehensive Unit Tests:** Added `tests/test_code_graph.py` and `tests/test_evidence_checker.py` (bringing test suite to 29 passing tests).
+### Changed
+- **Anti-Failure Mode Router (`SKILL.md`):** Rebuilt router (<100 lines) enforcing 4 operational boundaries: Scope Lock, Dependency Graph First, Deterministic Standard Tooling, and Verifiable Evidence Gate.
+- **Scope Manifest Protocol (`rules/pm-architecture.md`):** Added Section 2 mandating execution manifests before making file changes to eliminate agent over-imagining and scope drift.
+- **Coupling Heuristics (`rules/dev-big-o-security.md`):** Added guidelines for mapping incoming and outgoing dependencies prior to modifying shared functions.
+- **Evidence Verification Standards (`rules/qa-deploy-standards.md`):** Mandated proof-of-work criteria over self-checked markdown boxes.
+- **Default Version Bump:** Updated default reporting version across `generate_report.py` and demo templates to `v1.3.0`.
+
 ## [1.2.5] - 2026-11-05
 ### Fixed
 - Enhanced `slop_detector.py` to support multiline JSX interactive control blocks (e.g. `<button>\n🚀\n</button>`).
@@ -58,5 +71,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.0] - 2026-11-05
 ### Added
 - Initial release of `software-craft-skill` (`97b2bad`).
-- Core heuristic scanners: AST complexity, UI/UX accessibility, and security patterns.
-- Foundational domain rules across PM, UI/UX, Dev, and QA dimensions.

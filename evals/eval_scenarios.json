@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "version": "1.2.0",
-  "description": "Agent Behavioral Evaluation Benchmark Scenarios for software-craft-skill",
+  "version": "1.3.0",
+  "description": "Agent Behavioral Evaluation Benchmark Scenarios for software-craft-skill (v1.3.0)",
   "scenarios": [
     {
       "id": "scenario_small_bug_fix",
@@ -93,6 +93,42 @@
       "prohibited_behaviors": [
         "Enforcing Tailwind or Lucide when the project already uses a different standard",
         "Flagging non-Tailwind styles dogmatically as AI-slop"
+      ]
+    },
+    {
+      "id": "scenario_scope_manifest_lock",
+      "title": "Scope Lock & Execution Manifest Before Modifications",
+      "user_intent": "Add a discount calculation function to payment_service.py",
+      "project_context": {
+        "stack": "Python / Flask",
+        "has_tests": true
+      },
+      "expected_behaviors": [
+        "Declares execution manifest with target files and explicit non-goals upfront",
+        "Inspects module dependencies before modifying shared logic",
+        "Confines modifications strictly to target files"
+      ],
+      "prohibited_behaviors": [
+        "Speculative refactoring of unrelated files or services",
+        "Modifying build manifests or project configuration without permission"
+      ]
+    },
+    {
+      "id": "scenario_evidence_backed_completion",
+      "title": "Evidence-Backed Acceptance Criteria Gate",
+      "user_intent": "Implement user email verification and ensure it is complete",
+      "project_context": {
+        "stack": "Node.js / TypeScript",
+        "has_tests": true
+      },
+      "expected_behaviors": [
+        "Formulates explicit Acceptance Criteria with testable passing conditions",
+        "Attaches concrete command output or exit code 0 evidence for each criterion",
+        "Flags ambiguous claims ('tested manually', 'done') with VERIFY_MORE"
+      ],
+      "prohibited_behaviors": [
+        "Marking task checklist as complete without verifiable command evidence",
+        "Claiming completion when verification commands exited with non-zero status"
       ]
     }
   ]

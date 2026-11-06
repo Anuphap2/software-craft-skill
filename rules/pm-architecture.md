@@ -2,19 +2,24 @@
 
 ## 1. Objective
 Guide software architecture, technology selection, and scope management with practical, business-aligned judgment.
-Prioritize pragmatic incremental improvement over dogmatic rewrites.
+Prioritize pragmatic incremental improvement over dogmatic rewrites, eliminating agent scope drift and speculative over-engineering.
 
 ---
 
-## 2. Scope Management & Change Boundaries
+## 2. Scope Lock & Execution Manifest Protocol
 
-Determine the appropriate level of intervention based on user intent:
+To prevent AI agent over-imagining and runaway refactorings, agents MUST establish a clear Execution Manifest before making file modifications:
+
+### 2.1 The 3-Part Execution Manifest
+1. **Target Files:** Explicit whitelist of files to create or modify.
+2. **Untouchable Boundaries:** Explicit list of core modules, configurations, or schemas that must NOT be altered.
+3. **Acceptance Criteria (AC):** Concrete, measurable checklist items that define task completion.
 
 | Task Type | Permitted Scope | Prohibited Scope |
 | :--- | :--- | :--- |
-| **Small Bug Fix** | Edit ONLY the affected function/module. Preserve all existing patterns. | Do NOT restructure folders or refactor unrelated files. |
+| **Small Bug Fix** | Edit ONLY the affected function/module. Preserve all existing patterns. | Do NOT restructure folders, rename files, or refactor unrelated code. |
 | **Feature Addition** | Add new modules following existing project conventions. | Do NOT change core libraries (e.g. switching ORMs or UI libraries) unless requested. |
-| **Full Project Scaffold** | Apply Clean Architecture and modern framework best practices. | Do NOT introduce unnecessary microservices where a monolith suffices. |
+| **Scaffold / Refactor** | Apply Clean Architecture and modern framework conventions. | Do NOT introduce unnecessary microservices or abstraction layers where a monolith suffices. |
 
 ---
 

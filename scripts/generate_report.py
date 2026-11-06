@@ -81,7 +81,7 @@ def compute_heuristic_index(complexity_issues, slop_issues, security_issues):
     return index
 
 
-def generate_markdown_report(target_dir: str, version_tag: str = "v1.2.5") -> str:
+def generate_markdown_report(target_dir: str, version_tag: str = "v1.3.0") -> str:
     complexity_res = scan_complexity(target_dir)
     slop_res = scan_slop(target_dir)
     security_res = scan_security(target_dir)
@@ -179,7 +179,7 @@ def generate_markdown_report(target_dir: str, version_tag: str = "v1.2.5") -> st
 
 if __name__ == "__main__":
     target = sys.argv[1] if len(sys.argv) > 1 else "."
-    version = sys.argv[2] if len(sys.argv) > 2 and not sys.argv[2].startswith("-") else "v1.2.5"
+    version = sys.argv[2] if len(sys.argv) > 2 and not sys.argv[2].startswith("-") else "v1.3.0"
 
     output_file = None
     if "-o" in sys.argv:

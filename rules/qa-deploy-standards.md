@@ -2,7 +2,7 @@
 
 ## 1. Objective
 Guide testing and deployment readiness verification while strictly respecting the project's existing test framework and user intent.
-Always report verification status honestly based on executed commands, never on fabricated assumptions.
+Always report verification status honestly based on executed commands, eliminating the "checklist illusion" (marking items complete without actual verification).
 
 ---
 
@@ -23,7 +23,24 @@ When writing tests for new or modified code, focus on high-yield boundary cases:
 
 ---
 
-## 3. Practical Pre-Deployment Checklist
+## 3. Acceptance Criteria & Evidence Gate (Anti-Checklist Illusion)
+
+Tasks must be judged on concrete evidence rather than self-checked markdown boxes:
+
+### 3.1 The Three Verification Verdicts
+* 🟢 **ACCEPT:** The criterion has an executed command that terminated with exit code 0 and verifiable output, or non-ambiguous concrete artifacts.
+* 🟡 **VERIFY_MORE:** The criterion has ambiguous evidence (e.g. "tested manually", "looks good") requiring explicit execution proof or test logs.
+* 🔴 **REVISE:** The criterion failed command execution (exit code $\ne 0$), timed out, or lacks any proof of work.
+
+### 3.2 Evidence Verification Tooling
+Agents can validate an Acceptance Criteria manifest deterministically using:
+```bash
+python scripts/evidence_checker.py <criteria_file> --run
+```
+
+---
+
+## 4. Practical Pre-Deployment Checklist
 
 Use as an advisory checklist for production readiness:
 
